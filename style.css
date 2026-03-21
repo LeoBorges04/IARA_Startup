@@ -389,6 +389,56 @@ header h1.main-title {
     color: #a0a0a0;
 }
 
+/* Markdown Code Blocks */
+.code-block-wrapper {
+    background: #1e1e1e;
+    border-radius: 8px;
+    margin: 12px 0;
+    overflow: hidden;
+    font-family: 'Courier New', Courier, monospace;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.code-block-header {
+    background: #2d2d2d;
+    padding: 6px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #b3b3b3;
+    font-size: 0.75rem;
+    font-family: 'Inter', sans-serif;
+    border-bottom: 1px solid #444;
+}
+
+.code-block-header .copy-btn {
+    background: none;
+    border: none;
+    color: #b3b3b3;
+    cursor: pointer;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: color 0.2s;
+}
+
+.code-block-header .copy-btn:hover {
+    color: #ffffff;
+}
+
+.code-block-wrapper pre {
+    margin: 0;
+    padding: 14px;
+    overflow-x: auto;
+}
+
+.code-block-wrapper code {
+    color: #d4d4d4;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
 .message time {
     font-size: 0.7rem;
     display: block;
@@ -404,19 +454,25 @@ header h1.main-title {
     width: 100%;
     flex-shrink: 0;
     margin-bottom: 20px;
+    align-items: flex-end;
 }
 
 #message {
     flex: 1;
-    padding: 16px 24px;
+    padding: 14px 20px;
     border: 2px solid white;
-    border-radius: 30px;
+    border-radius: 20px;
     outline: none;
     font-size: 1rem;
     font-family: 'Inter', sans-serif;
     background: rgba(255, 255, 255, 0.9);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
     transition: all 0.3s ease;
+    resize: none;
+    min-height: 52px;
+    max-height: 200px;
+    overflow-y: auto;
+    line-height: 1.4;
 }
 
 #message:focus {

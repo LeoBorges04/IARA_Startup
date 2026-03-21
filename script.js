@@ -298,11 +298,17 @@ logoutBtn.addEventListener("click", () => {
   window.location.replace("login.html");
 });
 
-messageInput.addEventListener("keypress", (e) => {
+messageInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
     sendMessage();
+    e.target.style.height = '52px';
   }
+});
+
+messageInput.addEventListener("input", function() {
+  this.style.height = '52px';
+  this.style.height = (this.scrollHeight) + 'px';
 });
 
 sendBtn.addEventListener("click", sendMessage);
@@ -369,23 +375,61 @@ async function sendMessage() {
   }
 }
 
-// ===== RENDERIZAÇÃO DA MENSAGEM NO CHAT =====
+// ===== RENDERIZAÇÃO E FORMATAÇÃO =====
+
+function formatMessageHTML(text) {
+  const parts = text.split("```");
+  let html = "";
+  for (let i = 0; i < parts.length; i++) {
+    if (i % 2 === 0) {
+      // Plain text
+      html += parts[i].replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
+    } else {
+      // Code block
+      const codeContent = parts[i];
+      const firstLineBreak = codeContent.indexOf("\n");
+      let language = "";
+      let code = codeContent;
+      if (firstLineBreak !== -1) {
+         language = codeContent.substring(0, firstLineBreak).trim();
+         code = codeContent.substring(firstLineBreak + 1);
+      }
+      code = code.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      
+      html += `
+        <div class="code-block-wrapper">
+          <div class="code-block-header">
+            <span class="language-label">${language || "código"}</span>
+            <button class="copy-btn" onclick="navigator.clipboard.writeText(this.parentElement.nextElementSibling.innerText)">📋 Copiar</button>
+          </div>
+          <pre><code>${code}</code></pre>
+        </div>
+      `;
+    }
+  }
+  return html;
+}
+
 function appendMessageUI(sender, text) {
   const msgDiv = document.createElement("div");
   msgDiv.classList.add("message", sender);
 
   let prefix = "";
   if (sender === "user") {
-    prefix = "<strong>Você:</strong> ";
+    prefix = "<strong>Você:</strong><br>";
   } else if (sender === "bot") {
-    prefix = "<strong>IARA:</strong> ";
+    prefix = "<strong>IARA:</strong><br>";
   }
 
-  msgDiv.innerHTML = prefix + text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/\n/g, "<br>");
+  let formattedText = "";
+  if (sender === "bot") {
+    formattedText = formatMessageHTML(text);
+  } else {
+    // Preserve multiple spaces and newlines for user input (which may contain pasted code)
+    formattedText = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/ /g, "&nbsp;").replace(/\n/g, "<br>");
+  }
+
+  msgDiv.innerHTML = prefix + formattedText;
 
   const time = document.createElement("time");
   time.textContent = new Date().toLocaleTimeString([], {
@@ -404,43 +448,66 @@ async function appendMessageUITypewriter(sender, text) {
 
   let prefix = "";
   if (sender === "user") {
-    prefix = "<strong>Você:</strong> ";
+    prefix = "<strong>Você:</strong><br>";
   } else if (sender === "bot") {
-    prefix = "<strong>IARA:</strong> ";
+    prefix = "<strong>IARA:</strong><br>";
   }
 
-  const contentSpan = document.createElement("span");
   msgDiv.innerHTML = prefix;
-  msgDiv.appendChild(contentSpan);
-
   const time = document.createElement("time");
-  time.textContent = new Date().toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit"
-  });
-
+  time.textContent = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   msgDiv.appendChild(time);
+  
   chatDiv.appendChild(msgDiv);
   chatDiv.scrollTop = chatDiv.scrollHeight;
 
-  const tokens = [];
-  for (let i = 0; i < text.length; i++) {
-    if (text[i] === '\n') {
-       tokens.push('<br>');
-    } else {
-       tokens.push(text[i].replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"));
-    }
-  }
-
-  for (let j = 0; j < tokens.length; j++) {
-    contentSpan.innerHTML += tokens[j];
-    if (j % 3 === 0) {
+  const parts = text.split("```");
+  for (let i = 0; i < parts.length; i++) {
+    if (i % 2 === 0) {
+      // Texto normal (aparece caracter por caracter)
+      const span = document.createElement("span");
+      msgDiv.insertBefore(span, time);
+      
+      const chars = parts[i].split('');
+      for (let char of chars) {
+        if (char === '\n') span.innerHTML += "<br>";
+        else span.innerHTML += char.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
         chatDiv.scrollTop = chatDiv.scrollHeight;
+        await new Promise(r => setTimeout(r, 7));
+      }
+    } else {
+      // Bloco de Markdown de código (gera a caixa instantaneamente e dita o código nela)
+      const codeContent = parts[i];
+      const firstLineBreak = codeContent.indexOf("\n");
+      let language = "";
+      let code = codeContent;
+      if (firstLineBreak !== -1) {
+         language = codeContent.substring(0, firstLineBreak).trim();
+         code = codeContent.substring(firstLineBreak + 1);
+      }
+
+      const wrapper = document.createElement("div");
+      wrapper.classList.add("code-block-wrapper");
+      wrapper.innerHTML = `
+        <div class="code-block-header">
+          <span class="language-label">${language || "código"}</span>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText(this.parentElement.nextElementSibling.innerText)">📋 Copiar</button>
+        </div>
+        <pre><code></code></pre>
+      `;
+      msgDiv.insertBefore(wrapper, time);
+      const codeEl = wrapper.querySelector("code");
+
+      const chars = code.split('');
+      for (let j = 0; j < chars.length; j++) {
+        codeEl.innerHTML += chars[j].replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        if (j % 5 === 0) chatDiv.scrollTop = chatDiv.scrollHeight;
+        await new Promise(r => setTimeout(r, 3));
+      }
     }
-    await new Promise(r => setTimeout(r, 15));
   }
-  chatDiv.scrollTop = chatDiv.scrollHeight;
 }
+
 
 function appendLoadingUI(id) {
   const msgDiv = document.createElement("div");
