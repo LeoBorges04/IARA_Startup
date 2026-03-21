@@ -113,6 +113,7 @@ document.getElementById("register-form").addEventListener("submit", async functi
     localStorage.setItem("iara_logged_in", "true");
     localStorage.setItem("iara_user_email", data.user.email);
     localStorage.setItem("iara_user_name", data.user.name);
+    localStorage.setItem("iara_user_role", data.user.role);
 
     showCustomAlert("Sucesso", data.message || "Cadastro realizado com sucesso!", () => {
         window.location.replace("index.html");

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IARA - Painel de Administração</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body { margin: 0; font-family: 'Inter', sans-serif; background-color: #f7f9fc; color: #333; }
+        header { background-color: white; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        h1 { color: #f02492; margin: 0; font-size: 24px; }
+        .logout-btn { padding: 8px 16px; background-color: #f02492; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; }
+        .logout-btn:hover { background-color: #d01d78; }
+        
+        .container { max-width: 1000px; margin: 40px auto; padding: 0 20px; }
+        
+        /* User Cards */
+        .user-card { background: white; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow: hidden; }
+        .user-header { padding: 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: #fff; border-bottom: 1px solid #eee; transition: background 0.2s; }
+        .user-header:hover { background: #fafafa; }
+        .user-info strong { font-size: 18px; color: #333; display: block; }
+        .user-info span { font-size: 14px; color: #777; }
+        .user-stats { font-size: 14px; font-weight: 600; color: #f02492; background: #fdf0f7; padding: 4px 10px; border-radius: 20px; }
+        
+        /* Chats List */
+        .chats-container { display: none; padding: 20px; background: #fafbfc; }
+        .chats-container.open { display: block; }
+        
+        .chat-item { background: white; border: 1px solid #eee; padding: 15px; border-radius: 6px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .chat-info strong { display: block; font-size: 15px; margin-bottom: 4px; }
+        .chat-info span { font-size: 12px; color: #888; }
+        
+        .download-btn { padding: 6px 12px; background-color: #fff; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; font-size: 13px; color: #555; display: flex; align-items: center; gap: 6px; transition: 0.2s; }
+        .download-btn:hover { border-color: #f02492; color: #f02492; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Painel de Administração da IARA</h1>
+        <button class="logout-btn" id="logout-btn">Sair</button>
+    </header>
+    
+    <div class="container" id="users-container">
+        <p style="text-align: center; color: #888;">Carregando dados dos usuários...</p>
+    </div>
+
+    <script>
+        // Restrition Check
+        if (localStorage.getItem("iara_logged_in") !== "true" || localStorage.getItem("iara_user_role") !== "admin") {
+            window.location.replace("login.html");
+        }
+        
+        document.getElementById("logout-btn").addEventListener("click", () => {
+            localStorage.clear();
+            window.location.replace("login.html");
+        });
+
+        // Function to Trigger Download
+        function downloadTxt(filename, text) {
+            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function handleDownloadChat(chat) {
+            let content = `IARA Export - Conversa\nTítulo: ${chat.title}\nData: ${new Date(chat.createdAt).toLocaleString()}\n\n`;
+            content += `--------------------------------------------------\n\n`;
+            
+            chat.messages.forEach(msg => {
+                let roleLabel = 'Sistema';
+                if (msg.role === 'user') roleLabel = 'Usuário';
+                if (msg.role === 'assistant') roleLabel = 'IARA';
+                content += `[${roleLabel}]:\n${msg.content}\n\n`;
+            });
+            
+            downloadTxt(`conversa_${chat._id}.txt`, content);
+        }
+
+        async function loadData() {
+            try {
+                const response = await fetch("http://localhost:3000/api/admin/users-chats");
+                const users = await response.json();
+                
+                const container = document.getElementById("users-container");
+                container.innerHTML = "";
+                
+                if (!users || users.length === 0) {
+                    container.innerHTML = "<p>Nenhum usuário encontrado.</p>";
+                    return;
+                }
+
+                users.forEach(user => {
+                    const card = document.createElement('div');
+                    card.className = 'user-card';
+                    
+                    const roleBadge = user.role === 'admin' ? ' (Admin)' : '';
+                    
+                    const header = document.createElement('div');
+                    header.className = 'user-header';
+                    header.innerHTML = `
+                        <div class="user-info">
+                            <strong>${user.name}${roleBadge}</strong>
+                            <span>${user.email}</span>
+                        </div>
+                        <div class="user-stats">
+                            ${user.chats.length} Conversa(s)
+                        </div>
+                    `;
+                    
+                    const chatsDiv = document.createElement('div');
+                    chatsDiv.className = 'chats-container';
+                    
+                    if (user.chats.length === 0) {
+                        chatsDiv.innerHTML = `<p style="color: #999; font-size: 14px;">Nenhuma conversa registrada para este usuário.</p>`;
+                    } else {
+                        // Sort chats by date DESC
+                        user.chats.sort((a,b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+                        
+                        user.chats.forEach(chat => {
+                            const dateStr = new Date(chat.updatedAt).toLocaleString();
+                            const chatItem = document.createElement('div');
+                            chatItem.className = 'chat-item';
+                            chatItem.innerHTML = `
+                                <div class="chat-info">
+                                    <strong>${chat.title}</strong>
+                                    <span>Última msg: ${dateStr} | ${chat.messages.length} mensagens</span>
+                                </div>
+                                <button class="download-btn">Baixar .txt</button>
+                            `;
+                            
+                            // Attach event
+                            const btn = chatItem.querySelector('.download-btn');
+                            btn.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                handleDownloadChat(chat);
+                            });
+                            
+                            chatsDiv.appendChild(chatItem);
+                        });
+                    }
+                    
+                    // Toggle functionality
+                    header.addEventListener('click', () => {
+                        chatsDiv.classList.toggle('open');
+                    });
+                    
+                    card.appendChild(header);
+                    card.appendChild(chatsDiv);
+                    container.appendChild(card);
+                });
+            } catch (err) {
+                console.error(err);
+                document.getElementById("users-container").innerHTML = "<p style='color: red;'>Erro ao carregar dados do servidor.</p>";
+            }
+        }
+        
+        loadData();
+    </script>
+</body>
+</html>

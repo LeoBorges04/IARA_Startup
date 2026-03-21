@@ -44,10 +44,17 @@ document.getElementById("login-form").addEventListener("submit", async function(
     localStorage.setItem("iara_logged_in", "true");
     localStorage.setItem("iara_user_email", data.email);
     localStorage.setItem("iara_user_name", data.name);
+    localStorage.setItem("iara_user_role", data.role);
 
-    showCustomAlert("Sucesso", "Login efetuado com sucesso!", () => {
-        window.location.replace("index.html");
-    });
+    if (data.role === 'admin') {
+        showCustomAlert("Sucesso", "Login de administrador efetuado!", () => {
+            window.location.replace("admin.html");
+        });
+    } else {
+        showCustomAlert("Sucesso", "Login efetuado com sucesso!", () => {
+            window.location.replace("index.html");
+        });
+    }
   } catch (err) {
       showCustomAlert("Erro de Conexão", "Falha ao conectar com o banco de dados.");
   }
