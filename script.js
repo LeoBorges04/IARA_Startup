@@ -508,7 +508,6 @@ async function appendMessageUITypewriter(sender, text) {
   }
 }
 
-
 function appendLoadingUI(id) {
   const msgDiv = document.createElement("div");
   msgDiv.classList.add("message", "bot");

@@ -391,30 +391,31 @@ header h1.main-title {
 
 /* Markdown Code Blocks */
 .code-block-wrapper {
-    background: #1e1e1e;
+    background: #e64171; /* Dark pink from the palette */
     border-radius: 8px;
     margin: 12px 0;
     overflow: hidden;
     font-family: 'Courier New', Courier, monospace;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 15px rgba(230, 65, 113, 0.3);
+    border: none;
 }
 
 .code-block-header {
-    background: #2d2d2d;
+    background: #d13560; /* Slightly darker shade for the header */
     padding: 6px 14px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    color: #b3b3b3;
+    color: #ffdce6; /* Very light pink/white text for contrast */
     font-size: 0.75rem;
     font-family: 'Inter', sans-serif;
-    border-bottom: 1px solid #444;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .code-block-header .copy-btn {
     background: none;
     border: none;
-    color: #b3b3b3;
+    color: #ffdce6;
     cursor: pointer;
     font-size: 0.75rem;
     display: flex;
@@ -431,12 +432,14 @@ header h1.main-title {
     margin: 0;
     padding: 14px;
     overflow-x: auto;
+    background: transparent !important;
 }
 
 .code-block-wrapper code {
-    color: #d4d4d4;
+    color: #ffffff; /* White text for the code */
     font-size: 0.9rem;
     line-height: 1.5;
+    background: transparent !important;
 }
 
 .message time {
