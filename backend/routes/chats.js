@@ -77,4 +77,51 @@ router.put('/:id/rename', async (req, res) => {
   }
 });
 
+// Process a new message and communicate with OpenAI securely
+router.post('/:id/message', async (req, res) => {
+  try {
+    const { message } = req.body;
+    
+    // 1. Add user message locally
+    const chat = await Chat.findByIdAndUpdate(
+      req.params.id,
+      { $push: { messages: message } },
+      { new: true }
+    );
+    if (!chat) return res.status(404).json({ error: "Conversa não encontrada." });
+
+    // 2. Comunicar com a OpenAI internamente
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${process.env.API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: chat.messages.map(m => ({ role: m.role, content: m.content })),
+        temperature: 0.6,
+        max_tokens: 1000
+      })
+    });
+
+    if (!response.ok) throw new Error("Erro na comunicação com OpenAI");
+
+    const data = await response.json();
+    const botReply = data.choices?.[0]?.message?.content?.trim() || "Não consegui gerar resposta.";
+    const botMsgObj = { role: "assistant", content: botReply };
+
+    // 3. Atualizar DB com a resposta do Bot
+    await Chat.findByIdAndUpdate(
+      req.params.id,
+      { $push: { messages: botMsgObj } }
+    );
+
+    // 4. Retornar resposta ao frontend
+    res.status(200).json(botMsgObj);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

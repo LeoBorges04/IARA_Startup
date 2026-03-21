@@ -7,8 +7,6 @@ if (localStorage.getItem("iara_logged_in") !== "true") {
 
 // ===== CONSTANTES =====
 const API_URL = "http://localhost:3000/api";
-const OPENAI_API_KEY = ""; // Mova essa chave para o backend no futuro
-const MODEL = "gpt-4o-mini";
 const currentUserEmail = localStorage.getItem("iara_user_email") || "admin@admin.com";
 const currentUserName = localStorage.getItem("iara_user_name") || "Usuário";
 
@@ -331,7 +329,7 @@ async function sendMessage() {
 
   const chat = chats.find(c => c._id === currentChatId);
 
-  // Adiciona e renderiza a mensagem do usuário (optimistic)
+  // Renderiza a mensagem do usuário (optimistic UI)
   const newMsgObj = { role: "user", content: userMessage };
   chat.messages.push(newMsgObj);
   chat.updatedAt = Date.now();
@@ -345,47 +343,24 @@ async function sendMessage() {
   appendLoadingUI(loadingId);
 
   try {
-    // 1. Salvar no nosso banco local (API)
-    await fetch(`${API_URL}/chats/${currentChatId}`, {
-        method: "PUT",
+    // Comunicar com o nosso Backend (ele processa e fala com a OpenAI)
+    const response = await fetch(`${API_URL}/chats/${currentChatId}/message`, {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: newMsgObj })
     });
 
-    // 2. Comunicar com a OpenAI
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        messages: chat.messages,
-        temperature: 0.6,
-        max_tokens: 1000
-      })
-    });
+    if (!response.ok) throw new Error("Erro de comunicação com o servidor.");
 
-    if (!response.ok) throw new Error("Erro na OpenAI");
-
-    const data = await response.json();
-    const botReply = data.choices?.[0]?.message?.content?.trim() || "Não consegui gerar resposta.";
+    const botMsgObj = await response.json();
 
     removeLoadingUI(loadingId);
 
-    // 3. Atualizar UI e DB com a resposta do Bot
-    const botMsgObj = { role: "assistant", content: botReply };
+    // Atualizar UI com a resposta real da IARA processada lá no servidor
     chat.messages.push(botMsgObj);
     chat.updatedAt = Date.now();
     
-    appendMessageUITypewriter("bot", botReply);
-
-    await fetch(`${API_URL}/chats/${currentChatId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: botMsgObj })
-    });
+    appendMessageUITypewriter("bot", botMsgObj.content);
 
   } catch (error) {
     console.error("Erro:", error);
