@@ -35,7 +35,7 @@ npm install
 **3.** Configure as Suas Variáveis de Ambiente:
 Renomeie ou crie uma cópia do arquivo `.env.example` chamando-a apenas de `.env`. Em seguida, preencha os valores reais lá dentro:
 ```env
-MONGODB_URI=URL_DO_SEU_BANCO_MONGODB
+MONGODB_URI=mongodb+srv://IARA:<iara123>@iara.lrfvsnr.mongodb.net/?appName=IARA
 API_KEY=CHAVE_DA_SUA_API_OPENAI
 ```
 
