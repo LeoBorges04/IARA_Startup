@@ -80,6 +80,17 @@ Servidor rodando na porta 3000
 ```
 
 ⚠️ **Nota sobre DNS**: Este projeto foi configurado para usar DNS público (Google 8.8.8.8 e Cloudflare 1.1.1.1) para resolver corretamente o MongoDB Atlas SRV. Isso já está implementado automaticamente no `server.js`.
+API_KEY=CHAVE_DA_SUA_API_OPENAI
+```
+
+**4.** Inicie a API e deixe-a rodando:
+```bash
+npm start
+```
+Se tudo der certo, você deverá visualizar no seu terminal as mensagens:
+`Servidor rodando na porta 3000`
+`MongoDB: Conexão bem sucedida ao Atlas!`
+>>>>>>> f900beb2a3808988d03983fbb410c829c6de7e1d
 
 ---
 
@@ -99,6 +110,7 @@ A API do backend opera na rota `/api/...` sendo as principais chamadas as descri
 
 ### 🤖 Integração Inteligência Artificial
 * `POST /api/chats/:id/message`: É a principal rota do sistema base! Ela recebe a sua nova mensagem em tempo real, consulta o histórico da conversa no banco MongoDB, envia a requisição segura internamente processada usando a `API_KEY` para a API da **OpenAI** (através do modelo selecionado), injeta a resposta no banco de dados para salvar de vez seu histórico, e devolve somente a resposta final textual da IARA para ser renderizada na sua tela com animação de máquina de escrever!
+<<<<<<< HEAD
 
 ---
 
@@ -180,3 +192,5 @@ IARA_Startup/
 ⚠️ **IMPORTANTE**: Nunca faça commit do arquivo `.env` ou qualquer arquivo contendo credenciais reais no Git!
 
 O arquivo `.env` está no `.gitignore` para proteção. Use apenas o `.env.example` como template.
+=======
+>>>>>>> f900beb2a3808988d03983fbb410c829c6de7e1d
