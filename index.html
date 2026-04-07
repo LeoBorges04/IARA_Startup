@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IARA - Inteligência Artificial de Raciocínio Algorítmico</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+
+<body>
+    <div class="app-layout" id="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <h2>IARA</h2>
+            </div>
+            <button id="new-chat-btn" class="new-chat-btn">
+                <span>+</span> Novo Chat
+            </button>
+
+            <div class="chat-history" id="chat-history-list">
+                <!-- Chat items injected here -->
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="avatar" id="user-avatar-initial">U</div>
+                    <div class="email" id="user-email-display">user@email.com</div>
+                </div>
+                <button id="logout-btn" class="logout-btn-small">Sair da Conta</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header>
+                <button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
+                <h1 class="main-title">Inteligência Artificial de Raciocínio Algorítmico</h1>
+                <div style="width: 24px;" class="header-spacer"></div>
+            </header>
+
+            <div class="chat-wrapper">
+                <div id="chat"></div>
+
+                <div id="input-area">
+                    <textarea id="message" rows="1"
+                        placeholder="Cole o código ou digite a Mensagem... (Shift+Enter para pular linha)"></textarea>
+                    <button id="send-btn">➤</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal-overlay" id="greeting-modal" style="display: none;">
+        <div class="modal-container">
+            <h3 class="modal-title">Bem-vindo(a)!</h3>
+            <p class="modal-text" id="greeting-message"></p>
+            <div class="modal-actions">
+                <button class="modal-btn confirm-btn" id="greeting-close-btn">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="rename-modal" style="display: none;">
+        <div class="modal-container">
+            <h3 class="modal-title">Renomear Conversa</h3>
+            <div class="form-group" style="margin-bottom: 20px;">
+                <input type="text" id="rename-input" placeholder="Novo nome da conversa..." autocomplete="off">
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn cancel-btn" id="rename-cancel-btn">Cancelar</button>
+                <button class="modal-btn confirm-btn" id="rename-confirm-btn">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="delete-modal" style="display: none;">
+        <div class="modal-container">
+            <h3 class="modal-title">Excluir Conversa</h3>
+            <p class="modal-text">Tem certeza que deseja excluir esta conversa? Esta ação não pode ser desfeita.</p>
+            <div class="modal-actions">
+                <button class="modal-btn cancel-btn" id="delete-cancel-btn">Cancelar</button>
+                <button class="modal-btn danger-btn" id="delete-confirm-btn">Excluir</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script that powers sidebar logic and OpenAI connection -->
+    <script src="./script.js" defer></script>
+</body>
+
+</html>
