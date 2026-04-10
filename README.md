@@ -20,22 +20,66 @@ O frontend público desta aplicação está hospedado no GitHub Pages. Para aces
 
 ## ⚙️ Como rodar o servidor (Backend) localmente
 
-Siga o passo a passo abaixo para rodar o backend da IARA na sua própria máquina local.
+### Pré-requisitos
+- **Node.js** versão 14 ou superior ([Download aqui](https://nodejs.org/))
+- **Git** instalado no sistema
+- Acesso à internet para conexão com MongoDB Atlas e OpenAI API
+- Credenciais válidas do MongoDB Atlas e chave da API OpenAI
 
-**1.** Abra o seu terminal e navegue até a pasta do backend:
+### Passo a Passo de Instalação
+
+#### **Passo 1: Clonar o Repositório**
 ```bash
-cd backend/
+git clone https://github.com/leoborges04/IARA_Startup.git
+cd IARA_Startup
 ```
 
-**2.** Instale as dependências necessárias do Node.js:
+#### **Passo 2: Navegar até a Pasta do Backend**
+```bash
+cd backend
+```
+
+#### **Passo 3: Instalar as Dependências do Node.js**
 ```bash
 npm install
 ```
+Este comando irá instalar todas as dependências listadas no `package.json` (Express, Mongoose, bcryptjs, CORS, etc).
 
-**3.** Configure as Suas Variáveis de Ambiente:
-Renomeie ou crie uma cópia do arquivo `.env.example` chamando-a apenas de `.env`. Em seguida, preencha os valores reais lá dentro:
+#### **Passo 4: Configurar as Variáveis de Ambiente**
+1. Na pasta `backend/`, localize o arquivo `.env.example` (se não existir, veja a seção de Troubleshooting)
+2. Crie um novo arquivo chamado `.env` na mesma pasta `backend/`
+3. Copie o conteúdo do `.env.example` e preencha com suas credenciais reais:
+
 ```env
-MONGODB_URI=URL_DO_SEU_BANCO_MONGODB
+MONGODB_URI=mongodb+srv://IARA:iara123@iara.lrfvsnr.mongodb.net/?appName=IARA
+PORT=3000
+API_KEY=sua_chave_api_openai_aqui
+```
+
+**Campos necessários:**
+- **MONGODB_URI**: Sua string de conexão do MongoDB Atlas (já está configurada)
+- **PORT**: Porta onde o servidor irá rodar (padrão: 3000)
+- **API_KEY**: Sua chave de API da OpenAI (obtenha em https://platform.openai.com/account/api-keys)
+
+#### **Passo 5: Verificar Conectividade com o MongoDB Atlas**
+Antes de rodar o server, verifique se consegue acessar o Atlas:
+```bash
+npm start
+```
+
+#### **Passo 6: Iniciar o Servidor**
+```bash
+npm start
+```
+
+**Se tudo der certo, você verá:**
+```
+[dotenv@17.3.1] injecting env (3) from .env
+MongoDB: Conexão bem sucedida ao Atlas!
+Servidor rodando na porta 3000
+```
+
+⚠️ **Nota sobre DNS**: Este projeto foi configurado para usar DNS público (Google 8.8.8.8 e Cloudflare 1.1.1.1) para resolver corretamente o MongoDB Atlas SRV. Isso já está implementado automaticamente no `server.js`.
 API_KEY=CHAVE_DA_SUA_API_OPENAI
 ```
 
@@ -46,6 +90,7 @@ npm start
 Se tudo der certo, você deverá visualizar no seu terminal as mensagens:
 `Servidor rodando na porta 3000`
 `MongoDB: Conexão bem sucedida ao Atlas!`
+>>>>>>> f900beb2a3808988d03983fbb410c829c6de7e1d
 
 ---
 
@@ -65,3 +110,87 @@ A API do backend opera na rota `/api/...` sendo as principais chamadas as descri
 
 ### 🤖 Integração Inteligência Artificial
 * `POST /api/chats/:id/message`: É a principal rota do sistema base! Ela recebe a sua nova mensagem em tempo real, consulta o histórico da conversa no banco MongoDB, envia a requisição segura internamente processada usando a `API_KEY` para a API da **OpenAI** (através do modelo selecionado), injeta a resposta no banco de dados para salvar de vez seu histórico, e devolve somente a resposta final textual da IARA para ser renderizada na sua tela com animação de máquina de escrever!
+<<<<<<< HEAD
+
+---
+
+## 🆘 Troubleshooting - Problemas Comuns
+
+### ❌ Erro: `Error: querySrv ECONNREFUSED _mongodb._tcp`
+**Causa**: Problema de resolução DNS do MongoDB Atlas SRV.
+
+**Solução**: Este projeto já está configurado para usar DNS público automaticamente. Se o erro persistir:
+1. Reinicie seu terminal
+2. Verifique sua conexão de internet
+3. Tente alterar seus servidores DNS do Windows para 8.8.8.8 (Google) ou 1.1.1.1 (Cloudflare)
+
+### ❌ Erro: `ENOENT: no such file or directory, open '.env'`
+**Causa**: Arquivo `.env` não existe na pasta `backend/`.
+
+**Solução**:
+1. Crie um arquivo novo chamado `.env` dentro da pasta `backend/`
+2. Copie o conteúdo do `.env.example` e preencha as credenciais
+
+### ❌ Erro: `npm: command not found`
+**Causa**: Node.js não está instalado ou não está no PATH.
+
+**Solução**:
+1. [Baixe e instale Node.js](https://nodejs.org/) (versão LTS recomendada)
+2. Reinicie seu terminal/computador
+3. Verifique a instalação: `node --version`
+
+### ❌ Erro: `MongoDB: Conexão bem sucedida, mas depois não conecta`
+**Causa**: Banco de dados Atlas talvez não tenha sua IP na whitelist, ou credenciais incorretas.
+
+**Solução**:
+1. Acesse [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
+2. Vá para **Network Access** 
+3. Adicione seu IP à whitelist (ou use `0.0.0.0/0` para aceitar todas - apenas para desenvolvimento!)
+
+### ❌ Erro: `API_KEY inválida da OpenAI`
+**Causa**: Chave de API expirada, inválida ou com permissões insuficientes.
+
+**Solução**:
+1. Acesse [OpenAI API Keys](https://platform.openai.com/account/api-keys)
+2. Crie uma nova chave ou copie uma existente
+3. Atualize o arquivo `.env` com a nova chave
+4. Reinicie o servidor com `npm start`
+
+### ❌ Erro: `Port 3000 already in use`
+**Causa**: Outra aplicação está usando a porta 3000.
+
+**Solução**: 
+1. Opção A: Mude a porta no `.env` (ex: `PORT=3001`)
+2. Opção B: Feche a aplicação que está usando a porta 3000
+
+---
+
+## 📝 Estrutura de Pastas
+
+```
+IARA_Startup/
+├── backend/                    # Servidor Node.js + Express
+│   ├── models/                 # Modelos Mongoose (User, Chat)
+│   ├── routes/                 # Rotas da API (auth, chats, admin)
+│   ├── server.js               # Arquivo principal do servidor
+│   ├── .env                    # Variáveis de ambiente (NÃO COMMIT)
+│   ├── .env.example            # Exemplo de variáveis de ambiente
+│   └── package.json            # Dependências Node.js
+├── index.html                  # Página principal (Frontend)
+├── login.html                  # Página de login
+├── register.html               # Página de registro
+├── admin.html                  # Painel administrativo
+├── script.js                   # JavaScript principal (Frontend)
+├── style.css                   # Estilos CSS (Frontend)
+└── README.md                   # Este arquivo
+```
+
+---
+
+## 🔐 Segurança
+
+⚠️ **IMPORTANTE**: Nunca faça commit do arquivo `.env` ou qualquer arquivo contendo credenciais reais no Git!
+
+O arquivo `.env` está no `.gitignore` para proteção. Use apenas o `.env.example` como template.
+=======
+>>>>>>> f900beb2a3808988d03983fbb410c829c6de7e1d
