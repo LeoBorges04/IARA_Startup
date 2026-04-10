@@ -389,6 +389,66 @@ header h1.main-title {
     color: #a0a0a0;
 }
 
+/* Markdown Support Inside Messages */
+.message h1, .message h2, .message h3, .message h4 {
+    margin: 12px 0 8px 0;
+    color: inherit;
+    line-height: 1.2;
+}
+
+.message h1 { font-size: 1.4rem; }
+.message h2 { font-size: 1.25rem; }
+.message h3 { font-size: 1.15rem; }
+.message h4 { font-size: 1.05rem; }
+
+/* KaTeX Math Support */
+.katex-display {
+    margin: 12px 0;
+    padding: 8px 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.message p {
+    margin-bottom: 10px;
+}
+
+.message p:last-child {
+    margin-bottom: 0;
+}
+
+.message ul, .message ol {
+    margin: 10px 0 10px 20px;
+}
+
+.message li {
+    margin-bottom: 4px;
+}
+
+.message strong {
+    font-weight: 700;
+}
+
+.message em {
+    font-style: italic;
+}
+
+.message blockquote {
+    border-left: 4px solid rgba(255, 92, 138, 0.3);
+    padding-left: 12px;
+    margin: 12px 0;
+    color: #666;
+}
+
+.message code:not(pre code) {
+    background: rgba(255, 92, 138, 0.1);
+    color: #e64171;
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9em;
+}
+
 /* Markdown Code Blocks */
 .code-block-wrapper {
     background: #e64171; /* Dark pink from the palette */
