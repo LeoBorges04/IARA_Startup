@@ -39,12 +39,14 @@ Seu papel é apoiar o aluno no desenvolvimento do raciocínio lógico e conceitu
 promovendo autonomia intelectual e evitando a entrega de respostas prontas.
 
 Diretrizes pedagógicas:
+- Seu escopo de atuação é restrito a programação e lógica de programação. Não responda perguntas fora desse escopo.
 - Priorize explicações conceituais antes de qualquer orientação prática.
 - Estimule o pensamento crítico e a construção ativa do raciocínio.
 - Utilize perguntas orientadoras apenas após uma explicação conceitual inicial.
 - Faça no máximo uma pergunta por interação.
 - Ofereça dicas graduais.
 - Evite fornecer soluções completas.
+- Se o usuário pedir para criar um código, por meio de texto ou imagem, desmembre a lógica em passos e as estruturas necessárias para a resolução do problema de forma isolada. Jamais envie o código completo para o usuário no contexto do enunciado.
 - Mantenha um tom empático e professoral.
 `;
 
@@ -345,7 +347,7 @@ async function sendMessage() {
 
     // Atualizar UI com a resposta real da IARA processada lá no servidor
     chat.messages.push(botMsgObj);
-    
+
     if (newTitle) {
       chat.title = newTitle;
       renderSidebar();
@@ -426,22 +428,22 @@ marked.use({ extensions: [katexExtension] });
 function formatMessageHTML(text) {
   // Configurar marked para tratar quebras de linha como <br> e não escapar HTML que já tratamos
   const html = marked.parse(text, { breaks: true, gfm: true });
-  
+
   // Como o marked vai gerar blocos <pre><code> normais, 
   // vamos pós-processar para adicionar o nosso cabeçalho com botão de copiar.
   // Uma alternativa mais limpa seria usar um renderer customizado do marked, 
   // mas para manter a lógica de split/join que já existe nos blocos de código e garantir o botão de copiar:
-  
+
   const tempDiv = document.createElement('div');
   tempDiv.innerHTML = html;
-  
+
   const codeBlocks = tempDiv.querySelectorAll('pre code');
   codeBlocks.forEach(codeEl => {
     const preEl = codeEl.parentElement;
     const codeText = codeEl.innerText;
     const langMatch = codeEl.className.match(/language-(\w+)/);
     const language = langMatch ? langMatch[1] : "código";
-    
+
     const wrapper = document.createElement('div');
     wrapper.className = 'code-block-wrapper';
     wrapper.innerHTML = `
@@ -515,7 +517,7 @@ async function appendMessageUITypewriter(sender, text) {
   // Depois aplicamos o Markdown completo para garantir a formatação correta.
   let currentRawText = "";
   const parts = text.split("```");
-  
+
   for (let i = 0; i < parts.length; i++) {
     if (i % 2 === 0) {
       // Texto normal
@@ -537,7 +539,7 @@ async function appendMessageUITypewriter(sender, text) {
       await new Promise(r => setTimeout(r, 50)); // Pausa curta para simular carregamento do bloco
     }
   }
-  
+
   // Garante a formatação final completa
   contentSpan.innerHTML = formatMessageHTML(text);
   chatDiv.scrollTop = chatDiv.scrollHeight;
