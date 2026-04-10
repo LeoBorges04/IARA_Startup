@@ -35,10 +35,14 @@ const deleteConfirmBtn = document.getElementById('delete-confirm-btn');
 // ===== SYSTEM PROMPT =====
 const systemPrompt = `
 Você é IARA, uma tutora virtual de programação em nível universitário.
-Seu papel é apoiar o aluno no desenvolvimento do raciocínio lógico e conceitual,
+Você tem duas personalidades, uma pedagógica e outra que se define pelo comando de ativação dado pelo usuario.
+IARA sempre inicia um atendimento com a personalidade pedagógica.
+
+Se a personalidade for a pedagógica, você deve seguir as seguintes Diretrizes pedagógicas:
+
+-Seu papel é apoiar o aluno no desenvolvimento do raciocínio lógico e conceitual,
 promovendo autonomia intelectual e evitando a entrega de respostas prontas.
 
-Diretrizes pedagógicas:
 - Seu escopo de atuação é restrito a programação e lógica de programação. Não responda perguntas fora desse escopo.
 - Priorize explicações conceituais antes de qualquer orientação prática.
 - Estimule o pensamento crítico e a construção ativa do raciocínio.
@@ -48,6 +52,13 @@ Diretrizes pedagógicas:
 - Evite fornecer soluções completas.
 - Se o usuário pedir para criar um código, por meio de texto ou imagem, desmembre a lógica em passos e as estruturas necessárias para a resolução do problema de forma isolada. Jamais envie o código completo para o usuário no contexto do enunciado.
 - Mantenha um tom empático e professoral.
+
+  Se o usuario der um comando de ativação, você deve seguir as seguintes diretrizes:
+  - No caso do comando "leo123" vc pode responder as perguntas diretamente sem seguir as diretrizes pedagógicas, mas tem que ser mais direta, objetiva e sem enrolação. Com respostas completas para exercicios e afins.
+  - No caso do comando "iara123" vc deve voltar a seguir as diretrizes pedagógicas.
+
+  Sempre que um  comando for ativado, você deve primeiramente anunciar em qual modo está (IARA ou LEO) e depois responder as perguntas do usuário de acordo com o modo.
+
 `;
 
 // ===== ESTADO GLOBAL DA APLICAÇÃO =====
@@ -91,7 +102,7 @@ async function init() {
   }
 
   if (chats.length === 0) {
-    await createNewChat();
+    showEmptyState();
   } else {
     // Sort por recência
     chats.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
@@ -116,12 +127,53 @@ async function createNewChat() {
     if (response.ok) {
       const dbChat = await response.json();
       chats.unshift(dbChat);
-      renderSidebar();
-      selectChat(dbChat._id);
+
+      // Disparar transição em fases (RF: Garantir renderSidebar apenas após animação)
+      if (sidebar.classList.contains('empty-sidebar')) {
+        initiateLogoAnimation();
+        completeInterfaceTransition(dbChat._id);
+      } else {
+        renderSidebar();
+        selectChat(dbChat._id);
+        document.getElementById('input-area').style.display = 'flex';
+      }
     }
   } catch (err) {
     console.error("Erro ao criar chat:", err);
   }
+}
+
+// === GESTÃO DE TRANSIÇÕES (FASES) ===
+function initiateLogoAnimation() {
+  sidebar.classList.remove('empty-sidebar');
+}
+
+function completeInterfaceTransition(id) {
+  // Ocultar área de input inicialmente se estiver vindo do estado vazio
+  document.getElementById('input-area').style.display = 'none';
+
+  setTimeout(() => {
+    sidebar.classList.remove('sidebar-hide-content');
+    newChatBtn.classList.remove('hidden');
+    chatHistoryList.classList.remove('hidden');
+    document.getElementById('input-area').style.display = 'flex';
+
+    // Renderizar a lista de chats apenas agora (conforme solicitado pelo usuário)
+    renderSidebar();
+    if (id) {
+      // Selecionar o chat mas evitar que o selectChat dispare nova animação
+      const chat = chats.find(c => c._id === id);
+      if (chat) {
+        currentChatId = id;
+        chatDiv.innerHTML = '';
+        chat.messages.forEach(msg => {
+          if (msg.role === 'user') appendMessageUI('user', msg.content);
+          if (msg.role === 'assistant') appendMessageUI('bot', msg.content);
+        });
+        messageInput.focus();
+      }
+    }
+  }, 500); // 1.5s para garantir que a transição da logo (0.8s) terminou
 }
 
 function selectChat(id) {
@@ -129,8 +181,20 @@ function selectChat(id) {
   const chat = chats.find(c => c._id === id);
   if (!chat) return;
 
-  chatDiv.innerHTML = '';
+  // Se estiver vindo do estado vazio (ex: clique no botão inicial sem criar via createNewChat)
+  if (sidebar.classList.contains('empty-sidebar')) {
+    initiateLogoAnimation();
+    completeInterfaceTransition(id);
+    return; // O conteúdo será renderizado dentro do timeout
+  }
 
+  // Comportamento normal para troca de chats já existentes
+  document.getElementById('input-area').style.display = 'flex';
+  newChatBtn.classList.remove('hidden');
+  chatHistoryList.classList.remove('hidden');
+  sidebar.classList.remove('sidebar-hide-content');
+
+  chatDiv.innerHTML = '';
   chat.messages.forEach(msg => {
     if (msg.role === 'user') appendMessageUI('user', msg.content);
     if (msg.role === 'assistant') appendMessageUI('bot', msg.content);
@@ -150,6 +214,15 @@ function selectChat(id) {
 // ===== INTERFACE (SIDEBAR) =====
 function renderSidebar() {
   chatHistoryList.innerHTML = '';
+
+  // Ocultar/Mostrar elementos da barra lateral baseado na existência de chats
+  if (chats.length === 0) {
+    newChatBtn.classList.add('hidden');
+    chatHistoryList.classList.add('hidden');
+  } else {
+    newChatBtn.classList.remove('hidden');
+    chatHistoryList.classList.remove('hidden');
+  }
 
   chats.forEach(chat => {
     const btn = document.createElement('div');
@@ -247,7 +320,7 @@ async function handleDeleteConfirm() {
     chats = chats.filter(c => c._id !== chatToDeleteId);
 
     if (chats.length === 0) {
-      await createNewChat();
+      showEmptyState();
     } else if (currentChatId === chatToDeleteId) {
       selectChat(chats[0]._id);
     } else {
@@ -263,6 +336,40 @@ async function handleDeleteConfirm() {
 function closeDeleteModal() {
   if (deleteModal) deleteModal.style.display = 'none';
   chatToDeleteId = null;
+}
+
+function showEmptyState() {
+  renderSidebar();
+  chatDiv.innerHTML = `
+    <div class="empty-state-container">
+      <img src="./assets/logoChat.png" class="empty-state-icon" alt="IARA Logo">
+      <h2 class="empty-state-title">Bem-vindo ao IARA</h2>
+      <p class="empty-state-text">Sua tutora virtual de programação. Comece uma nova conversa para tirar suas dúvidas ou praticar exercícios.</p>
+      <button id="start-conversation-btn" class="start-chat-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        Iniciar Conversa
+      </button>
+    </div>
+  `;
+
+  // Ocultar área de input
+  document.getElementById('input-area').style.display = 'none';
+
+  // Ocultar botão de novo chat na sidebar
+  newChatBtn.classList.add('hidden');
+
+  // Ativar estados de "vazio" (logo centralizada) e "oculto" (conteúdo Invisível)
+  sidebar.classList.add('empty-sidebar');
+  sidebar.classList.add('sidebar-hide-content');
+
+  // Adicionar evento ao botão
+  const startBtn = document.getElementById('start-conversation-btn');
+  if (startBtn) {
+    startBtn.onclick = () => createNewChat();
+  }
 }
 
 // ===== EVENTOS =====
