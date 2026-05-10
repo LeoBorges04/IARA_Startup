@@ -1,4 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+html {
+    /* Responsive base font size: scales smoothly between 14px on mobile and 18px on large screens */
+    font-size: clamp(14px, 1vw + 10px, 18px);
+}
 
 * {
     box-sizing: border-box;
@@ -8,7 +13,7 @@
 
 html,
 body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
     color: #37352f;
     overflow: hidden;
     line-height: 1.6;
@@ -123,7 +128,7 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Outfit', sans-serif;
     box-shadow: 0 4px 15px rgba(255, 92, 138, 0.3);
 
     /* Animation settings */
@@ -180,7 +185,7 @@ body {
     border: none;
     text-align: left;
     transition: all 0.2s ease;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Outfit', sans-serif;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -276,7 +281,7 @@ body {
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Outfit', sans-serif;
     text-align: center;
 }
 
@@ -519,7 +524,16 @@ header h1.main-title {
 
 .message ul,
 .message ol {
-    margin: 10px 0 10px 20px;
+    margin: 10px 0 10px 0;
+    padding-left: 24px;
+}
+
+.message ul {
+    list-style-type: disc;
+}
+
+.message ol {
+    list-style-type: decimal;
 }
 
 .message li {
@@ -572,7 +586,7 @@ header h1.main-title {
     color: #ffdce6;
     /* Very light pink/white text for contrast */
     font-size: 0.75rem;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Outfit', sans-serif;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -632,7 +646,7 @@ header h1.main-title {
     border-radius: 20px;
     outline: none;
     font-size: 1rem;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Outfit', sans-serif;
     background: rgba(255, 255, 255, 0.9);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
     transition: all 0.3s ease;
@@ -742,7 +756,7 @@ header h1.main-title {
     font-size: 1rem;
     background: #ffffff;
     transition: all 0.3s ease;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Outfit', sans-serif;
 }
 
 .form-group input:focus {
@@ -764,7 +778,7 @@ header h1.main-title {
     transition: all 0.3s ease;
     margin-top: 10px;
     box-shadow: 0 4px 15px rgba(255, 92, 138, 0.3);
-    font-family: 'Inter', sans-serif;
+    font-family: 'Outfit', sans-serif;
 }
 
 .auth-btn:hover {
@@ -867,7 +881,7 @@ header h1.main-title {
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Outfit', sans-serif;
     border: none;
 }
 
@@ -990,7 +1004,7 @@ header h1.main-title {
     gap: 12px;
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     box-shadow: 0 10px 25px rgba(255, 92, 138, 0.3);
-    font-family: 'Inter', sans-serif;
+    font-family: 'Outfit', sans-serif;
     margin: 0 auto;
 }
 

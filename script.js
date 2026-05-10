@@ -14,6 +14,7 @@ const currentUserName = localStorage.getItem("iara_user_name") || "Usuário";
 const chatDiv = document.getElementById('chat');
 const messageInput = document.getElementById('message');
 const sendBtn = document.getElementById('send-btn');
+const cancelBtn = document.getElementById('cancel-btn');
 const chatHistoryList = document.getElementById('chat-history-list');
 const newChatBtn = document.getElementById('new-chat-btn');
 const mobileMenuBtn = document.getElementById('mobile-menu-btn');
@@ -32,40 +33,13 @@ const deleteModal = document.getElementById('delete-modal');
 const deleteCancelBtn = document.getElementById('delete-cancel-btn');
 const deleteConfirmBtn = document.getElementById('delete-confirm-btn');
 
-// ===== SYSTEM PROMPT =====
-const systemPrompt = `
-Você é IARA, uma tutora virtual de programação em nível universitário.
-Você tem duas personalidades, uma pedagógica e outra que se define pelo comando de ativação dado pelo usuario.
-IARA sempre inicia um atendimento com a personalidade pedagógica.
-
-Se a personalidade for a pedagógica, você deve seguir as seguintes Diretrizes pedagógicas:
-
--Seu papel é apoiar o aluno no desenvolvimento do raciocínio lógico e conceitual,
-promovendo autonomia intelectual e evitando a entrega de respostas prontas.
-
-- Seu escopo de atuação é restrito a programação e lógica de programação. Não responda perguntas fora desse escopo.
-- Priorize explicações conceituais antes de qualquer orientação prática.
-- Estimule o pensamento crítico e a construção ativa do raciocínio.
-- Utilize perguntas orientadoras apenas após uma explicação conceitual inicial.
-- Faça no máximo uma pergunta por interação.
-- Ofereça dicas graduais.
-- Evite fornecer soluções completas.
-- Se o usuário pedir para criar um código, por meio de texto ou imagem, desmembre a lógica em passos e as estruturas necessárias para a resolução do problema de forma isolada. Jamais envie o código completo para o usuário no contexto do enunciado.
-- Mantenha um tom empático e professoral.
-
-  Se o usuario der um comando de ativação, você deve seguir as seguintes diretrizes:
-  - No caso do comando "leo123" vc pode responder as perguntas diretamente sem seguir as diretrizes pedagógicas, mas tem que ser mais direta, objetiva e sem enrolação. Com respostas completas para exercicios e afins.
-  - No caso do comando "iara123" vc deve voltar a seguir as diretrizes pedagógicas.
-
-  Sempre que um  comando for ativado, você deve primeiramente anunciar em qual modo está (IARA ou LEO) e depois responder as perguntas do usuário de acordo com o modo.
-
-`;
-
 // ===== ESTADO GLOBAL DA APLICAÇÃO =====
 let chats = [];
 let currentChatId = null;
 let chatToRenameId = null;
 let chatToDeleteId = null;
+let isGenerating = false;
+let currentAbortController = null;
 
 // Display user info in sidebar
 userEmailDisplay.textContent = currentUserName;
@@ -114,8 +88,7 @@ async function init() {
 async function createNewChat() {
   const newChatObj = {
     userId: currentUserEmail,
-    title: "Nova Conversa",
-    messages: [{ role: "system", content: systemPrompt }]
+    title: "Nova Conversa"
   };
 
   try {
@@ -402,6 +375,14 @@ messageInput.addEventListener("input", function () {
 });
 
 sendBtn.addEventListener("click", sendMessage);
+if (cancelBtn) {
+  cancelBtn.addEventListener("click", () => {
+    if (currentAbortController) {
+      currentAbortController.abort();
+    }
+    isGenerating = false;
+  });
+}
 
 // Modal Event Listeners
 if (renameCancelBtn) renameCancelBtn.addEventListener('click', closeRenameModal);
@@ -420,8 +401,14 @@ window.addEventListener('click', (e) => {
 
 // ===== COMUNICAÇÃO (ENVIAR/RECEBER) =====
 async function sendMessage() {
+  if (isGenerating) return;
   const userMessage = messageInput.value.trim();
   if (!userMessage) return;
+
+  isGenerating = true;
+  messageInput.disabled = true;
+  sendBtn.style.display = 'none';
+  if (cancelBtn) cancelBtn.style.display = 'flex';
 
   const chat = chats.find(c => c._id === currentChatId);
 
@@ -433,17 +420,18 @@ async function sendMessage() {
   appendMessageUI("user", userMessage);
   messageInput.value = "";
 
-  // updateChatTitleIfNeeded(userMessage); // Removido: agora o backend cuida disso
-
   const loadingId = "loading-" + Date.now();
   appendLoadingUI(loadingId);
+
+  currentAbortController = new AbortController();
 
   try {
     // Comunicar com o nosso Backend (ele processa e fala com a OpenAI)
     const response = await fetch(`${API_URL}/chats/${currentChatId}/message`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: newMsgObj })
+      body: JSON.stringify({ message: newMsgObj }),
+      signal: currentAbortController.signal
     });
 
     if (!response.ok) throw new Error("Erro de comunicação com o servidor.");
@@ -462,12 +450,24 @@ async function sendMessage() {
 
     chat.updatedAt = Date.now();
 
-    appendMessageUITypewriter("bot", botMsgObj.content);
+    await appendMessageUITypewriter("bot", botMsgObj.content);
 
   } catch (error) {
-    console.error("Erro:", error);
-    removeLoadingUI(loadingId);
-    appendMessageUI("bot", "Ops... algo deu errado. Tente novamente!");
+    if (error.name === 'AbortError') {
+      removeLoadingUI(loadingId);
+      appendMessageUI("bot", "A geração da resposta foi cancelada.");
+    } else {
+      console.error("Erro:", error);
+      removeLoadingUI(loadingId);
+      appendMessageUI("bot", "Ops... algo deu errado. Tente novamente!");
+    }
+  } finally {
+    isGenerating = false;
+    messageInput.disabled = false;
+    sendBtn.style.display = 'flex';
+    if (cancelBtn) cancelBtn.style.display = 'none';
+    currentAbortController = null;
+    messageInput.focus();
   }
 }
 
@@ -626,14 +626,16 @@ async function appendMessageUITypewriter(sender, text) {
   const parts = text.split("```");
 
   for (let i = 0; i < parts.length; i++) {
+    if (!isGenerating) break;
     if (i % 2 === 0) {
       // Texto normal
       const chars = parts[i].split('');
       for (let char of chars) {
+        if (!isGenerating) break;
         currentRawText += char;
         // Atualiza o HTML com o Markdown parcial (pode causar pulos, mas é o mais próximo do desejado)
         // Se preferir algo mais estável, renderize apenas no final ou use apenas o raw text aqui.
-        contentSpan.innerHTML = marked.parse(currentRawText, { breaks: true });
+        contentSpan.innerHTML = formatMessageHTML(currentRawText);
         chatDiv.scrollTop = chatDiv.scrollHeight;
         await new Promise(r => setTimeout(r, 5));
       }
@@ -648,7 +650,7 @@ async function appendMessageUITypewriter(sender, text) {
   }
 
   // Garante a formatação final completa
-  contentSpan.innerHTML = formatMessageHTML(text);
+  contentSpan.innerHTML = formatMessageHTML(currentRawText);
   chatDiv.scrollTop = chatDiv.scrollHeight;
 }
 
