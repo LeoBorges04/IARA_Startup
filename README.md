@@ -3,7 +3,7 @@
 O projeto **IARA** é uma plataforma que atua como uma tutora virtual com auxílio de Inteligência Artificial para apoiar o aluno no desenvolvimento de seu raciocínio algorítmico em nível universitário.
 
 A arquitetura do projeto é dividida em:
-- **Frontend:** Estático e simples construído com HTML, CSS e Vanilla JS moderno para entregar uma experiência UI/UX fluida com animações suaves e layouts imersivos, além de suporte para empacotamento Desktop via Electron.
+- **Frontend:** Estático e simples construído com HTML, CSS e Vanilla JS moderno para entregar uma experiência UI/UX fluida com animações suaves e layouts imersivos.
 - **Backend:** Uma API de alta performance construída em **Python (FastAPI)** conectada ao banco de dados **MongoDB Atlas** e equipada com sistema **RAG (Retrieval-Augmented Generation)**, responsável pela segurança, gestão de históricos, contas de usuários e mediação com a **OpenAI**.
 
 ---
@@ -22,43 +22,7 @@ O frontend público desta aplicação está hospedado no GitHub Pages. Para aces
 
 ### Pré-requisitos
 - **Python** versão 3.10 ou superior
-- **Node.js** (para a aplicação desktop Electron, opcional)
 - Acesso à internet para conexão com MongoDB Atlas e OpenAI API
-
-### Passo a Passo de Instalação
-
-#### **Passo 1: Clonar o Repositório**
-```bash
-git clone https://github.com/leoborges04/IARA_Startup.git
-cd IARA_Startup
-```
-
-#### **Passo 2: Configurar o Ambiente Virtual e Instalar Dependências**
-```bash
-python -m venv venv
-source venv/bin/activate  # No Windows: venv\Scripts\activate
-pip install -r backend_python/requirements.txt
-```
-
-#### **Passo 3: Configurar as Variáveis de Ambiente**
-Crie um arquivo `.env` na raiz do projeto ou na pasta `backend_python/`:
-
-```env
-MONGODB_URI=mongodb+srv://IARA:iara123@iara.lrfvsnr.mongodb.net/?appName=IARA
-PORT=3000
-API_KEY=sua_chave_api_openai_aqui
-```
-
-#### **Passo 4: Iniciar o Servidor Backend**
-```bash
-python backend_python/run_server.py
-```
-
-Se tudo der certo, você verá no terminal:
-```
-Iniciando backend Python RAG da IARA...
-Servidor rodando em http://0.0.0.0:3000
-```
 
 ---
 
@@ -89,13 +53,11 @@ IARA_Startup/
 │   ├── services/               # Serviços RAG e integração OpenAI
 │   ├── config.py               # Configurações de ambiente
 │   ├── database.py             # Conexão MongoDB Atlas
-│   ├── main.py                 # Aplicação FastAPI
-│   └── run_server.py           # Script de inicialização do Uvicorn
+│   └── main.py                 # Aplicação FastAPI (Ponto de entrada)
 ├── index.html                  # Interface Web Principal
 ├── login.html                  # Tela de Login
 ├── register.html               # Tela de Cadastro
 ├── admin.html                  # Painel Administrativo
 ├── script.js                   # Lógica Frontend em JS
-├── desktop_main.js             # Processo Principal Electron (Desktop)
 └── README.md                   # Este arquivo
 ```
