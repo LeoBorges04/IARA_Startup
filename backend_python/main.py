@@ -3,6 +3,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 import os
+import sys
+
+# Garantir que o diretório backend_python esteja no sys.path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 import uvicorn
 import config
 from database import check_connection
@@ -15,8 +20,13 @@ from routes.documents import router as documents_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("Iniciando backend Python RAG da IARA...")
-    check_connection()
-    seed_admin_user()
+    if check_connection():
+        try:
+            seed_admin_user()
+        except Exception as e:
+            print(f"Aviso ao executar seed_admin_user: {e}")
+    else:
+        print("⚠️ Não foi possível conectar ao MongoDB Atlas. Verifique a MONGODB_URI no arquivo .env")
     yield
 
 app = FastAPI(

@@ -16,8 +16,12 @@ def format_chat(chat_doc):
 
 @router.get("/{user_id}")
 def get_user_chats(user_id: str):
-    chats = list(chats_collection.find({"userId": user_id, "isDeleted": {"$ne": True}}).sort("updatedAt", -1))
-    return [format_chat(c) for c in chats]
+    try:
+        chats = list(chats_collection.find({"userId": user_id, "isDeleted": {"$ne": True}}).sort("updatedAt", -1))
+        return [format_chat(c) for c in chats]
+    except Exception as e:
+        print(f"Erro ao buscar conversas do usuário no MongoDB: {e}")
+        return []
 
 @router.post("", status_code=status.HTTP_201_CREATED)
 def create_chat(chat_data: CreateChatRequest):

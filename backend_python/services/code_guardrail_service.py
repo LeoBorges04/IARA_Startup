@@ -7,6 +7,19 @@ logger = logging.getLogger(__name__)
 
 POLITE_REFUSAL = "Como tutora IARA, não posso fornecer o código completo do exercício."
 
+BYPASS_KEYWORDS = [
+    "juntar", "junte", "código completo", "codigo completo", "programa completo", 
+    "código inteiro", "codigo inteiro", "unir as partes", "unir os codigos", 
+    "mostrar tudo", "código final", "codigo final", "juntar as etapas",
+    "junta tudo", "me dá o código", "me da o codigo", "gera o arquivo completo",
+    "unir tudo", "código todo", "codigo todo"
+]
+
+def detect_bypass_or_merge_request(user_message: str) -> bool:
+    """Detecta se o usuário solicitou a junção de código ou a entrega do programa completo."""
+    msg_lower = user_message.lower().strip()
+    return any(k in msg_lower for k in BYPASS_KEYWORDS)
+
 # Frases e seções motivacionais / conclusões prolixas a serem filtradas
 DISALLOWED_PATTERNS = [
     r"você consegue.*",
@@ -29,10 +42,19 @@ def extract_code_blocks(text: str) -> List[str]:
 def is_preassembled_code(code_str: str) -> bool:
     """
     Analisa a densidade estrutural do código para verificar se ele forma uma solução pré-montada ou completa.
-    Detecta a presença combinada de múltiplas estruturas (ex: main + loop + condicional + operação em vetor/ponteiro).
+    Retorna False se o código for um template genérico/abstrato com placeholders.
     """
     code_lower = code_str.lower()
     
+    # Se contiver placeholders genéricos explícitos, é um template sintático didático e NÃO vazamento de código completo
+    placeholders = [
+        "nome_constante", "nomevetor", "tipovar", "variavelmaior", "variavelmenor", 
+        "nomevariavel", "condicao", "sua_condicao", "sua_acao", "contador1", "contador2", 
+        "contadoraprovados", "tipodado", "limite"
+    ]
+    if any(ph in code_lower for ph in placeholders):
+        return False
+
     # Marcadores de estruturas principais
     has_main = bool(re.search(r'\b(int\s+main|void\s+main|def\s+main|public\s+static\s+void\s+main)\b', code_lower))
     has_loop = bool(re.search(r'\b(for|while|do)\b', code_lower))
@@ -93,11 +115,27 @@ def clean_fluff_text(text: str) -> str:
             
     return "\n".join(cleaned_lines).strip()
 
-def sanitize_rag_chunk_content(raw_content: str) -> str:
+def sanitize_specific_domain_logic(text: str) -> str:
     """
-    Extrai o bloco de código Markdown puro (```...```) de um chunk RAG.
-    Se o chunk for prosa de livro PDF sem sintaxe de código real, retorna string vazia para fallback no esqueleto genérico.
+    Substitui apenas comparações numéricas específicas de negócio (ex: 'medias[i] >= 7')
+    por placeholders abstratos (ex: 'sua_condicao_1'), sem alterar iteradores de laço (ex: 'i < NOME_CONSTANTE').
     """
+    code_blocks = extract_code_blocks(text)
+    if not code_blocks:
+        return text
+
+    new_text = text
+    for cb in code_blocks:
+        cb_sanitized = cb
+        # Preserva laços for (int i = 0; i < NOME_CONSTANTE; i++) ou (int i = 0; i < TAM; i++)
+        # Substitui apenas condicionais específicas de negócio com números ou variáveis de domínio
+        cb_sanitized = re.sub(r'if\s*\((?!\s*i\s*<|\s*j\s*<)(.*?)\)', r'if (sua_condicao)', cb_sanitized)
+        cb_sanitized = re.sub(r'(\b(aprovados|reprovados|exame)\b\s*(\+\+|--|\+=|=).*?;)', r'contador1++;', cb_sanitized)
+        
+        if cb_sanitized != cb:
+            new_text = new_text.replace(cb, cb_sanitized)
+
+    return new_text
     if not raw_content:
         return ""
         
@@ -195,11 +233,6 @@ def build_modular_topic_response(topics_data: List[Dict[str, Any]], unique_citat
         parts.append("\n\n".join(section))
         
     final_output = "\n\n".join(parts)
-    
-    if unique_citations and "📚" not in final_output:
-        files_list_str = ", ".join(unique_citations)
-        final_output += f"\n\n📚 **Fonte(s) do Acervo:** {files_list_str}"
-        
     return final_output
 
 def get_best_syntax_template(rag_code_chunks: List[Dict[str, Any]]) -> str:
