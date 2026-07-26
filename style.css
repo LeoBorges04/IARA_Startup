@@ -393,11 +393,11 @@ header h1.main-title {
 
 #chat {
     flex: 1 1 auto;
-    padding: 24px;
+    padding: 20px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
     background: rgba(255, 255, 255, 0.7);
     backdrop-filter: blur(15px);
     border-radius: 24px;
@@ -426,14 +426,18 @@ header h1.main-title {
 
 .message {
     max-width: 85%;
-    padding: 12px 16px;
-    border-radius: 12px;
-    line-height: 1.6;
-    font-size: 1rem;
+    width: fit-content;
+    padding: 8px 12px;
+    border-radius: 14px;
+    line-height: 1.4;
+    font-size: 0.95rem;
     word-wrap: break-word;
     position: relative;
     animation: fadeIn 0.3s ease-out forwards;
     letter-spacing: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
 @keyframes fadeIn {
@@ -467,17 +471,35 @@ header h1.main-title {
 
 .user strong,
 .bot strong {
-    font-weight: 600;
-    margin-bottom: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1;
+    margin: 0;
+    padding: 0;
     display: block;
+    opacity: 0.85;
+}
+
+.message-text {
+    margin: 0;
+    padding: 0;
+    line-height: 1.4;
+}
+
+.message time {
+    display: block;
+    font-size: 0.68rem;
+    margin-top: 2px;
+    align-self: flex-end;
+    opacity: 0.75;
 }
 
 .user time {
-    color: rgba(255, 255, 255, 0.8);
+    color: rgba(255, 255, 255, 0.85);
 }
 
 .bot time {
-    color: #a0a0a0;
+    color: #999;
 }
 
 /* Markdown Support Inside Messages */
@@ -485,47 +507,58 @@ header h1.main-title {
 .message h2,
 .message h3,
 .message h4 {
-    margin: 12px 0 8px 0;
+    margin: 4px 0 2px 0;
     color: inherit;
     line-height: 1.2;
 }
 
 .message h1 {
-    font-size: 1.4rem;
-}
-
-.message h2 {
     font-size: 1.25rem;
 }
 
+.message h2 {
+    font-size: 1.1rem;
+}
+
 .message h3 {
-    font-size: 1.15rem;
+    font-size: 1rem;
 }
 
 .message h4 {
-    font-size: 1.05rem;
+    font-size: 0.95rem;
 }
 
 /* KaTeX Math Support */
 .katex-display {
-    margin: 12px 0;
-    padding: 8px 0;
+    margin: 4px 0;
+    padding: 2px 0;
     overflow-x: auto;
     overflow-y: hidden;
 }
 
-.message p {
-    margin-bottom: 10px;
+.message p,
+.message-text p {
+    margin: 2px 0;
 }
 
-.message p:last-child {
-    margin-bottom: 0;
+.message p:first-child,
+.message p:first-of-type,
+.message-text p:first-child,
+.message-text p:first-of-type {
+    margin-top: 0 !important;
+}
+
+.message p:last-child,
+.message p:last-of-type,
+.message-text p:last-child,
+.message-text p:last-of-type {
+    margin-bottom: 0 !important;
 }
 
 .message ul,
 .message ol {
-    margin: 10px 0 10px 0;
-    padding-left: 24px;
+    margin: 4px 0 6px 0;
+    padding-left: 20px;
 }
 
 .message ul {
@@ -537,7 +570,7 @@ header h1.main-title {
 }
 
 .message li {
-    margin-bottom: 4px;
+    margin-bottom: 2px;
 }
 
 .message strong {
@@ -549,19 +582,19 @@ header h1.main-title {
 }
 
 .message blockquote {
-    border-left: 4px solid rgba(255, 92, 138, 0.3);
-    padding-left: 12px;
-    margin: 12px 0;
+    border-left: 3px solid rgba(255, 92, 138, 0.4);
+    padding-left: 10px;
+    margin: 6px 0;
     color: #666;
 }
 
 .message code:not(pre code) {
     background: rgba(255, 92, 138, 0.1);
     color: #e64171;
-    padding: 2px 4px;
+    padding: 2px 5px;
     border-radius: 4px;
     font-family: 'Courier New', Courier, monospace;
-    font-size: 0.9em;
+    font-size: 0.88em;
 }
 
 /* Markdown Code Blocks */
@@ -569,10 +602,10 @@ header h1.main-title {
     background: #e64171;
     /* Dark pink from the palette */
     border-radius: 8px;
-    margin: 12px 0;
+    margin: 8px 0;
     overflow: hidden;
     font-family: 'Courier New', Courier, monospace;
-    box-shadow: 0 4px 15px rgba(230, 65, 113, 0.3);
+    box-shadow: 0 4px 15px rgba(230, 65, 113, 0.25);
     border: none;
 }
 

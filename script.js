@@ -570,30 +570,29 @@ function appendMessageUI(sender, text) {
   const msgDiv = document.createElement("div");
   msgDiv.classList.add("message", sender);
 
-  let prefix = "";
-  if (sender === "user") {
-    prefix = "<strong>Você:</strong><br>";
-  } else if (sender === "bot") {
-    prefix = "<strong>IARA:</strong><br>";
-  }
+  const senderLabel = document.createElement("strong");
+  senderLabel.textContent = sender === "user" ? "Você:" : "IARA:";
 
-  let formattedText = "";
+  const contentDiv = document.createElement("div");
+  contentDiv.classList.add("message-text");
+
   if (sender === "bot") {
-    formattedText = formatMessageHTML(text);
+    contentDiv.innerHTML = formatMessageHTML(text);
   } else {
     // Preserve multiple spaces and newlines for user input (which may contain pasted code)
-    formattedText = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/ /g, "&nbsp;").replace(/\n/g, "<br>");
+    contentDiv.innerHTML = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/ /g, "&nbsp;").replace(/\n/g, "<br>");
   }
 
-  msgDiv.innerHTML = prefix + formattedText;
-
-  const time = document.createElement("time");
-  time.textContent = new Date().toLocaleTimeString([], {
+  const timeEl = document.createElement("time");
+  timeEl.textContent = new Date().toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit"
   });
 
-  msgDiv.appendChild(time);
+  msgDiv.appendChild(senderLabel);
+  msgDiv.appendChild(contentDiv);
+  msgDiv.appendChild(timeEl);
+
   chatDiv.appendChild(msgDiv);
   chatDiv.scrollTop = chatDiv.scrollHeight;
 }
@@ -602,55 +601,46 @@ async function appendMessageUITypewriter(sender, text) {
   const msgDiv = document.createElement("div");
   msgDiv.classList.add("message", sender);
 
-  let prefix = "";
-  if (sender === "user") {
-    prefix = "<strong>Você:</strong><br>";
-  } else if (sender === "bot") {
-    prefix = "<strong>IARA:</strong><br>";
-  }
+  const senderLabel = document.createElement("strong");
+  senderLabel.textContent = sender === "user" ? "Você:" : "IARA:";
 
-  msgDiv.innerHTML = prefix;
-  const contentSpan = document.createElement("span");
-  msgDiv.appendChild(contentSpan);
+  const contentDiv = document.createElement("div");
+  contentDiv.classList.add("message-text");
 
-  const time = document.createElement("time");
-  time.textContent = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  msgDiv.appendChild(time);
+  const timeEl = document.createElement("time");
+  timeEl.textContent = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+  msgDiv.appendChild(senderLabel);
+  msgDiv.appendChild(contentDiv);
+  msgDiv.appendChild(timeEl);
 
   chatDiv.appendChild(msgDiv);
   chatDiv.scrollTop = chatDiv.scrollHeight;
 
-  // Efeito máquina de escrever: Primeiro mostramos o texto puro sendo "digitado"
-  // Depois aplicamos o Markdown completo para garantir a formatação correta.
   let currentRawText = "";
   const parts = text.split("```");
 
   for (let i = 0; i < parts.length; i++) {
     if (!isGenerating) break;
     if (i % 2 === 0) {
-      // Texto normal
       const chars = parts[i].split('');
       for (let char of chars) {
         if (!isGenerating) break;
         currentRawText += char;
-        // Atualiza o HTML com o Markdown parcial (pode causar pulos, mas é o mais próximo do desejado)
-        // Se preferir algo mais estável, renderize apenas no final ou use apenas o raw text aqui.
-        contentSpan.innerHTML = formatMessageHTML(currentRawText);
+        contentDiv.innerHTML = formatMessageHTML(currentRawText);
         chatDiv.scrollTop = chatDiv.scrollHeight;
         await new Promise(r => setTimeout(r, 5));
       }
     } else {
-      // Bloco de código
       const codeBlockFull = "```" + parts[i] + "```";
       currentRawText += codeBlockFull;
-      contentSpan.innerHTML = formatMessageHTML(currentRawText);
+      contentDiv.innerHTML = formatMessageHTML(currentRawText);
       chatDiv.scrollTop = chatDiv.scrollHeight;
-      await new Promise(r => setTimeout(r, 50)); // Pausa curta para simular carregamento do bloco
+      await new Promise(r => setTimeout(r, 50));
     }
   }
 
-  // Garante a formatação final completa
-  contentSpan.innerHTML = formatMessageHTML(currentRawText);
+  contentDiv.innerHTML = formatMessageHTML(text);
   chatDiv.scrollTop = chatDiv.scrollHeight;
 }
 

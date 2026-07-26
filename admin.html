@@ -3,49 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IARA - Painel de Administração</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600&display=swap" rel="stylesheet">
+    <title>IARA - Painel de Administração & RAG</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { margin: 0; font-family: 'Outfit', sans-serif; background-color: #f7f9fc; color: #333; }
         header { background-color: white; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        h1 { color: #f02492; margin: 0; font-size: 24px; }
-        .logout-btn { padding: 8px 16px; background-color: #f02492; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; }
+        h1 { color: #f02492; margin: 0; font-size: 24px; font-weight: 700; }
+        .logout-btn { padding: 8px 16px; background-color: #f02492; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s; }
         .logout-btn:hover { background-color: #d01d78; }
         
-        .container { max-width: 1000px; margin: 40px auto; padding: 0 20px; }
+        .container { max-width: 1000px; margin: 30px auto; padding: 0 20px; }
+        
+        /* Section Cards */
+        .card-section { background: white; border-radius: 12px; padding: 25px; margin-bottom: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); }
+        .card-section h2 { margin-top: 0; color: #1a1a2e; font-size: 20px; border-bottom: 2px solid #fdf0f7; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        
+        /* Form & Upload */
+        .upload-form { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; margin-top: 15px; }
+        .upload-form input[type="file"] { padding: 8px; border: 1px dashed #ccc; border-radius: 6px; background: #fafafa; flex: 1; min-width: 250px; }
+        .upload-form select { padding: 10px; border: 1px solid #ccc; border-radius: 6px; background: white; font-family: inherit; font-size: 14px; }
+        .upload-btn { padding: 10px 20px; background-color: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s; }
+        .upload-btn:hover { background-color: #059669; }
+        .upload-status { font-weight: 500; font-size: 14px; margin-top: 10px; }
+        
+        /* Documents Table */
+        .doc-list { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .doc-list th, .doc-list td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; font-size: 14px; }
+        .doc-list th { background: #fdf0f7; color: #f02492; font-weight: 600; }
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+        .badge-concept { background: #e0f2fe; color: #0369a1; }
+        .badge-code { background: #fef3c7; color: #b45309; }
+        .delete-btn { padding: 4px 10px; background: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        .delete-btn:hover { background: #dc2626; }
         
         /* User Cards */
-        .user-card { background: white; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow: hidden; }
-        .user-header { padding: 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: #fff; border-bottom: 1px solid #eee; transition: background 0.2s; }
+        .user-card { background: white; border-radius: 8px; margin-bottom: 15px; border: 1px solid #eee; overflow: hidden; }
+        .user-header { padding: 18px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: #fff; transition: background 0.2s; }
         .user-header:hover { background: #fafafa; }
-        .user-info strong { font-size: 18px; color: #333; display: block; }
-        .user-info span { font-size: 14px; color: #777; }
-        .user-stats { font-size: 14px; font-weight: 600; color: #f02492; background: #fdf0f7; padding: 4px 10px; border-radius: 20px; }
+        .user-info strong { font-size: 17px; color: #333; display: block; }
+        .user-info span { font-size: 13px; color: #777; }
+        .user-stats { font-size: 13px; font-weight: 600; color: #f02492; background: #fdf0f7; padding: 4px 10px; border-radius: 20px; }
         
         /* Chats List */
-        .chats-container { display: none; padding: 20px; background: #fafbfc; }
+        .chats-container { display: none; padding: 18px; background: #fafbfc; border-top: 1px solid #eee; }
         .chats-container.open { display: block; }
         
-        .chat-item { background: white; border: 1px solid #eee; padding: 15px; border-radius: 6px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-        .chat-info strong { display: block; font-size: 15px; margin-bottom: 4px; }
+        .chat-item { background: white; border: 1px solid #eee; padding: 12px 16px; border-radius: 6px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .chat-info strong { display: block; font-size: 14px; margin-bottom: 3px; }
         .chat-info span { font-size: 12px; color: #888; }
         
-        .download-btn { padding: 6px 12px; background-color: #fff; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; font-size: 13px; color: #555; display: flex; align-items: center; gap: 6px; transition: 0.2s; }
+        .download-btn { padding: 6px 12px; background-color: #fff; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; font-size: 13px; color: #555; transition: 0.2s; }
         .download-btn:hover { border-color: #f02492; color: #f02492; }
     </style>
 </head>
 <body>
     <header>
-        <h1>Painel de Administração da IARA</h1>
+        <h1>Painel do Professor & Administração IARA</h1>
         <button class="logout-btn" id="logout-btn">Sair</button>
     </header>
     
-    <div class="container" id="users-container">
-        <p style="text-align: center; color: #888;">Carregando dados dos usuários...</p>
+    <div class="container">
+        <!-- RAG Ingestion Section -->
+        <div class="card-section">
+            <h2>📚 Acervo RAG & Exemplos de Código (Upload com 1 Clique)</h2>
+            <p style="color: #666; font-size: 14px; margin-bottom: 10px;">
+                Envie apostilas, enunciados (PDF/TXT/MD) ou arquivos de código modelo (C++/Python). O sistema RAG fatiará, vetorizará com <strong>SentenceTransformers</strong> e integrará ao MongoDB Atlas.
+            </p>
+            <form class="upload-form" id="upload-form">
+                <input type="file" id="file-input" required accept=".pdf,.txt,.md,.cpp,.c,.py,.java">
+                <select id="category-select">
+                    <option value="concept">📘 Conceito Didático / Teoria</option>
+                    <option value="code_example">💻 Exemplo de Código (Template)</option>
+                </select>
+                <button type="submit" class="upload-btn" id="upload-btn">Enviar para o RAG</button>
+            </form>
+            <div class="upload-status" id="upload-status"></div>
+
+            <h3 style="margin-top: 25px; font-size: 16px; color: #444;">Documentos Cadastrados no RAG</h3>
+            <table class="doc-list" id="doc-table">
+                <thead>
+                    <tr>
+                        <th>Nome do Arquivo</th>
+                        <th>Categoria</th>
+                        <th>Chunks no Mongo</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="doc-tbody">
+                    <tr><td colspan="4" style="color: #888; text-align: center;">Carregando documentos...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- User Chats Section -->
+        <div class="card-section">
+            <h2>💬 Histórico de Usuários & Conversas</h2>
+            <div id="users-container">
+                <p style="text-align: center; color: #888;">Carregando dados dos usuários...</p>
+            </div>
+        </div>
     </div>
 
     <script>
-        // Restrition Check
+        // Restriction Check
         if (localStorage.getItem("iara_logged_in") !== "true" || localStorage.getItem("iara_user_role") !== "admin") {
             window.location.replace("login.html");
         }
@@ -55,7 +115,7 @@
             window.location.replace("login.html");
         });
 
-        // Function to Trigger Download
+        // Download Chat as TXT
         function downloadTxt(filename, text) {
             const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
             const url = URL.createObjectURL(blob);
@@ -82,7 +142,93 @@
             downloadTxt(`conversa_${chat._id}.txt`, content);
         }
 
-        async function loadData() {
+        // Load RAG Documents
+        async function loadDocuments() {
+            try {
+                const res = await fetch("http://localhost:3000/api/documents");
+                const docs = await res.json();
+                const tbody = document.getElementById("doc-tbody");
+                tbody.innerHTML = "";
+
+                if (!docs || docs.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" style="color: #999; text-align: center;">Nenhum documento cadastrado no RAG.</td></tr>`;
+                    return;
+                }
+
+                docs.forEach(doc => {
+                    const tr = document.createElement("tr");
+                    const catBadge = doc.category === 'code_example' 
+                        ? `<span class="badge badge-code">Exemplo de Código</span>` 
+                        : `<span class="badge badge-concept">Conceito Didático</span>`;
+                    
+                    tr.innerHTML = `
+                        <td><strong>${doc.filename}</strong></td>
+                        <td>${catBadge}</td>
+                        <td>${doc.chunks_count} chunks</td>
+                        <td><button class="delete-btn" onclick="deleteDoc('${doc.filename}')">Excluir</button></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                console.error("Erro ao carregar documentos:", err);
+            }
+        }
+
+        async function deleteDoc(filename) {
+            if (!confirm(`Deseja excluir o documento '${filename}' do RAG?`)) return;
+            try {
+                await fetch(`http://localhost:3000/api/documents/${encodeURIComponent(filename)}`, { method: "DELETE" });
+                loadDocuments();
+            } catch (err) {
+                alert("Erro ao excluir documento.");
+            }
+        }
+
+        // Upload Form Handler
+        document.getElementById("upload-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById("file-input");
+            const catSelect = document.getElementById("category-select");
+            const statusDiv = document.getElementById("upload-status");
+            const uploadBtn = document.getElementById("upload-btn");
+
+            if (!fileInput.files[0]) return;
+
+            const formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+            formData.append("category", catSelect.value);
+
+            uploadBtn.disabled = true;
+            uploadBtn.innerText = "Processando RAG...";
+            statusDiv.style.color = "#0369a1";
+            statusDiv.innerText = "⏳ Fatiando texto e gerando embeddings com SentenceTransformers...";
+
+            try {
+                const res = await fetch("http://localhost:3000/api/documents/upload", {
+                    method: "POST",
+                    body: formData
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    statusDiv.style.color = "#059669";
+                    statusDiv.innerText = `✅ ${data.message} (${data.chunks_created} chunks salvos no Mongo Atlas)`;
+                    fileInput.value = "";
+                    loadDocuments();
+                } else {
+                    statusDiv.style.color = "#dc2626";
+                    statusDiv.innerText = `❌ Erro: ${data.detail || 'Falha ao enviar documento.'}`;
+                }
+            } catch (err) {
+                statusDiv.style.color = "#dc2626";
+                statusDiv.innerText = "❌ Erro de conexão com o servidor Python.";
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.innerText = "Enviar para o RAG";
+            }
+        });
+
+        // Load Users & Chats
+        async function loadUsersData() {
             try {
                 const response = await fetch("http://localhost:3000/api/admin/users-chats");
                 const users = await response.json();
@@ -119,7 +265,6 @@
                     if (user.chats.length === 0) {
                         chatsDiv.innerHTML = `<p style="color: #999; font-size: 14px;">Nenhuma conversa registrada para este usuário.</p>`;
                     } else {
-                        // Sort chats by date DESC
                         user.chats.sort((a,b) => new Date(b.updatedAt) - new Date(a.updatedAt));
                         
                         user.chats.forEach(chat => {
@@ -134,7 +279,6 @@
                                 <button class="download-btn">Baixar .txt</button>
                             `;
                             
-                            // Attach event
                             const btn = chatItem.querySelector('.download-btn');
                             btn.addEventListener('click', (e) => {
                                 e.stopPropagation();
@@ -145,7 +289,6 @@
                         });
                     }
                     
-                    // Toggle functionality
                     header.addEventListener('click', () => {
                         chatsDiv.classList.toggle('open');
                     });
@@ -160,7 +303,8 @@
             }
         }
         
-        loadData();
+        loadDocuments();
+        loadUsersData();
     </script>
 </body>
 </html>
