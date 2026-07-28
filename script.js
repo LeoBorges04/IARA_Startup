@@ -39,6 +39,8 @@ let currentChatId = null;
 let chatToRenameId = null;
 let chatToDeleteId = null;
 let isGenerating = false;
+let generatingChatId = null;
+let unreadChatIds = new Set();
 let currentAbortController = null;
 
 // Display user info in sidebar
@@ -150,6 +152,9 @@ function completeInterfaceTransition(id) {
 }
 
 function selectChat(id) {
+  if (unreadChatIds.has(id)) {
+    unreadChatIds.delete(id);
+  }
   currentChatId = id;
   const chat = chats.find(c => c._id === id);
   if (!chat) return;
@@ -211,6 +216,25 @@ function renderSidebar() {
       selectChat(chat._id);
     };
 
+    let indicator = null;
+    if (chat._id === generatingChatId) {
+      indicator = document.createElement('div');
+      indicator.classList.add('generating-indicator');
+      indicator.title = "Gerando resposta...";
+      indicator.innerHTML = '<span class="generating-dot"></span><span class="generating-text">Gerando</span>';
+      indicator.onclick = (e) => {
+        selectChat(chat._id);
+      };
+    } else if (unreadChatIds.has(chat._id)) {
+      indicator = document.createElement('div');
+      indicator.classList.add('generating-indicator', 'unread');
+      indicator.title = "Nova resposta pronta!";
+      indicator.innerHTML = '<span class="generating-dot"></span><span class="generating-text">Nova</span>';
+      indicator.onclick = (e) => {
+        selectChat(chat._id);
+      };
+    }
+
     const actionsDiv = document.createElement('div');
     actionsDiv.classList.add('chat-actions');
 
@@ -236,6 +260,9 @@ function renderSidebar() {
     actionsDiv.appendChild(deleteBtn);
 
     btn.appendChild(titleSpan);
+    if (indicator) {
+      btn.appendChild(indicator);
+    }
     btn.appendChild(actionsDiv);
 
     chatHistoryList.appendChild(btn);
@@ -405,29 +432,41 @@ async function sendMessage() {
   const userMessage = messageInput.value.trim();
   if (!userMessage) return;
 
+  const targetChatId = currentChatId;
+  const chat = chats.find(c => c._id === targetChatId);
+  if (!chat) return;
+
   isGenerating = true;
+  generatingChatId = targetChatId;
   messageInput.disabled = true;
   sendBtn.style.display = 'none';
   if (cancelBtn) cancelBtn.style.display = 'flex';
 
-  const chat = chats.find(c => c._id === currentChatId);
-
-  // Renderiza a mensagem do usuário (optimistic UI)
+  // Adiciona a mensagem do usuário na estrutura de dados do chat alvo
   const newMsgObj = { role: "user", content: userMessage };
   chat.messages.push(newMsgObj);
   chat.updatedAt = Date.now();
 
-  appendMessageUI("user", userMessage);
   messageInput.value = "";
+  messageInput.style.height = '52px';
+
+  // Só renderiza na tela se o usuário ainda estiver no mesmo chat
+  if (currentChatId === targetChatId) {
+    appendMessageUI("user", userMessage);
+  }
 
   const loadingId = "loading-" + Date.now();
-  appendLoadingUI(loadingId);
+  if (currentChatId === targetChatId) {
+    appendLoadingUI(loadingId);
+  }
+
+  renderSidebar();
 
   currentAbortController = new AbortController();
 
   try {
     // Comunicar com o nosso Backend (ele processa e fala com a OpenAI)
-    const response = await fetch(`${API_URL}/chats/${currentChatId}/message`, {
+    const response = await fetch(`${API_URL}/chats/${targetChatId}/message`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message: newMsgObj }),
@@ -438,36 +477,55 @@ async function sendMessage() {
 
     const { botMsgObj, newTitle } = await response.json();
 
-    removeLoadingUI(loadingId);
+    if (currentChatId === targetChatId) {
+      removeLoadingUI(loadingId);
+    }
 
-    // Atualizar UI com a resposta real da IARA processada lá no servidor
+    // Atualizar modelo de dados do chat correto
     chat.messages.push(botMsgObj);
 
     if (newTitle) {
       chat.title = newTitle;
-      renderSidebar();
     }
 
     chat.updatedAt = Date.now();
+    renderSidebar();
 
-    await appendMessageUITypewriter("bot", botMsgObj.content);
+    // Só faz a animação se o usuário AINDA estiver visualizando este chat
+    if (currentChatId === targetChatId) {
+      await appendMessageUITypewriter("bot", botMsgObj.content, targetChatId);
+    } else {
+      unreadChatIds.add(targetChatId);
+    }
 
   } catch (error) {
-    if (error.name === 'AbortError') {
+    if (currentChatId === targetChatId) {
       removeLoadingUI(loadingId);
-      appendMessageUI("bot", "A geração da resposta foi cancelada.");
+    }
+    if (error.name === 'AbortError') {
+      if (currentChatId === targetChatId) {
+        appendMessageUI("bot", "A geração da resposta foi cancelada.");
+      }
     } else {
       console.error("Erro:", error);
-      removeLoadingUI(loadingId);
-      appendMessageUI("bot", "Ops... algo deu errado. Tente novamente!");
+      if (currentChatId === targetChatId) {
+        appendMessageUI("bot", "Ops... algo deu errado. Tente novamente!");
+      }
     }
   } finally {
     isGenerating = false;
+    generatingChatId = null;
+    if (currentChatId !== targetChatId && chat.messages.length > 0) {
+      unreadChatIds.add(targetChatId);
+    }
     messageInput.disabled = false;
     sendBtn.style.display = 'flex';
     if (cancelBtn) cancelBtn.style.display = 'none';
     currentAbortController = null;
-    messageInput.focus();
+    renderSidebar();
+    if (currentChatId === targetChatId) {
+      messageInput.focus();
+    }
   }
 }
 
@@ -571,7 +629,7 @@ function appendMessageUI(sender, text) {
   msgDiv.classList.add("message", sender);
 
   const senderLabel = document.createElement("strong");
-  senderLabel.textContent = sender === "user" ? "Você:" : "IARA:";
+  senderLabel.textContent = sender === "user" ? "Você" : "IARA";
 
   const contentDiv = document.createElement("div");
   contentDiv.classList.add("message-text");
@@ -597,12 +655,12 @@ function appendMessageUI(sender, text) {
   chatDiv.scrollTop = chatDiv.scrollHeight;
 }
 
-async function appendMessageUITypewriter(sender, text) {
+async function appendMessageUITypewriter(sender, text, targetChatId) {
   const msgDiv = document.createElement("div");
   msgDiv.classList.add("message", sender);
 
   const senderLabel = document.createElement("strong");
-  senderLabel.textContent = sender === "user" ? "Você:" : "IARA:";
+  senderLabel.textContent = sender === "user" ? "" : "IARA:";
 
   const contentDiv = document.createElement("div");
   contentDiv.classList.add("message-text");
@@ -621,11 +679,11 @@ async function appendMessageUITypewriter(sender, text) {
   const parts = text.split("```");
 
   for (let i = 0; i < parts.length; i++) {
-    if (!isGenerating) break;
+    if (!isGenerating || currentChatId !== targetChatId) break;
     if (i % 2 === 0) {
       const chars = parts[i].split('');
       for (let char of chars) {
-        if (!isGenerating) break;
+        if (!isGenerating || currentChatId !== targetChatId) break;
         currentRawText += char;
         contentDiv.innerHTML = formatMessageHTML(currentRawText);
         chatDiv.scrollTop = chatDiv.scrollHeight;
@@ -640,8 +698,10 @@ async function appendMessageUITypewriter(sender, text) {
     }
   }
 
-  contentDiv.innerHTML = formatMessageHTML(text);
-  chatDiv.scrollTop = chatDiv.scrollHeight;
+  if (currentChatId === targetChatId) {
+    contentDiv.innerHTML = formatMessageHTML(text);
+    chatDiv.scrollTop = chatDiv.scrollHeight;
+  }
 }
 
 function appendLoadingUI(id) {
