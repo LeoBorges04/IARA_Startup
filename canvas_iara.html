@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IARA — Project Model Canvas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --card-border: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-cyan: #38bdf8;
+            --accent-purple: #a855f7;
+            --accent-green: #4ade80;
+            --accent-yellow: #facc15;
+            --accent-red: #f87171;
+            --header-bg: #1e1b4b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 24px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+            padding: 20px 30px;
+            border-radius: 16px;
+            border: 1px solid #4338ca;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+
+        .header-title h1 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(to right, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-title p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-top: 4px;
+        }
+
+        .header-badges {
+            display: flex;
+            gap: 10px;
+        }
+
+        .badge {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #cbd5e1;
+        }
+
+        /* Canvas Grid System matching canvas.jpg */
+        .canvas-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: auto auto auto;
+            gap: 16px;
+            flex-grow: 1;
+        }
+
+        .canvas-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .canvas-card:hover {
+            border-color: var(--accent-cyan);
+            transform: translateY(-2px);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .card-icon {
+            font-size: 1.3rem;
+        }
+
+        .card-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #f1f5f9;
+        }
+
+        .card-subtitle {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--accent-cyan);
+            margin-left: auto;
+        }
+
+        .card-content {
+            font-size: 0.85rem;
+            color: #cbd5e1;
+            line-height: 1.5;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .card-content ul {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .card-content li {
+            position: relative;
+            padding-left: 16px;
+        }
+
+        .card-content li::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: var(--accent-cyan);
+            font-weight: bold;
+        }
+
+        /* Specific Grid Spans matching canvas.jpg */
+        /* Col 1 */
+        .block-justificativas { grid-column: 1; grid-row: 1; }
+        .block-smart { grid-column: 1; grid-row: 2; }
+        .block-beneficios { grid-column: 1; grid-row: 3; }
+
+        /* Col 2 */
+        .block-produto { grid-column: 2; grid-row: 1; }
+        .block-requisitos { grid-column: 2; grid-row: 2 / span 2; }
+
+        /* Col 3 */
+        .block-stakeholders { grid-column: 3; grid-row: 1; }
+        .block-equipe { grid-column: 3; grid-row: 2; }
+        .block-restricoes { grid-column: 3; grid-row: 3; }
+
+        /* Col 4 */
+        .block-premissas { grid-column: 4; grid-row: 1; }
+        .block-entregas { grid-column: 4; grid-row: 2 / span 2; }
+
+        /* Col 5 */
+        .block-riscos { grid-column: 5; grid-row: 1; }
+        .block-timeline { grid-column: 5; grid-row: 2; }
+        .block-custos { grid-column: 5; grid-row: 3; }
+
+        /* Print styling for exports */
+        @media print {
+            body { background: white; color: black; padding: 10px; }
+            header { background: white; border: 1px solid #ccc; color: black; }
+            .header-title h1 { -webkit-text-fill-color: black; }
+            .canvas-card { background: white; border: 1px solid #ccc; color: black; box-shadow: none; }
+            .card-title { color: black; }
+            .card-content { color: #333; }
+            .card-content li::before { color: black; }
+        }
+
+        @media (max-width: 1200px) {
+            .canvas-grid {
+                grid-template-columns: repeat(2, 1fr);
+                grid-template-rows: auto;
+            }
+            .block-justificativas, .block-smart, .block-beneficios,
+            .block-produto, .block-requisitos, .block-stakeholders,
+            .block-equipe, .block-restricoes, .block-premissas,
+            .block-entregas, .block-riscos, .block-timeline, .block-custos {
+                grid-column: auto;
+                grid-row: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-title">
+            <h1>🧠 IARA — Project Model Canvas</h1>
+            <p>Plataforma de Inteligência Artificial para Raciocínio Algorítmico (Tutora Virtual RAG)</p>
+        </div>
+        <div class="header-badges">
+            <span class="badge">José Finocchio Jr. Template</span>
+            <span class="badge">Agosto / 2026</span>
+            <span class="badge">Versão MVP 1.0</span>
+        </div>
+    </header>
+
+    <main class="canvas-grid">
+
+        <!-- QUADRO 1: JUSTIFICATIVAS -->
+        <section class="canvas-card block-justificativas">
+            <div class="card-header">
+                <span class="card-icon">💬</span>
+                <span class="card-title">Justificativas</span>
+                <span class="card-subtitle">Passado</span>
+            </div>
+            <div class="card-content">
+                <ul>
+                    <li>Altas taxas de retenção/reprovação em disciplinas de Algoritmos e Programação.</li>
+                    <li>Sobrecarga de tutores e monitores para atendimento individualizado contínuo.</li>
+                    <li>Ferramentas genéricas (ChatGPT) entregam o código pronto sem ensinar a lógica.</li>
+                    <li>Falta de personalização alinhada com as ementas da instituição.</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- QUADRO 2: OBJ SMART -->
+        <section class="canvas-card block-smart">
+            <div class="card-header">
+                <span class="card-icon">🎯</span>
+                <span class="card-title">Obj SMART</span>
+            </div>
+            <div class="card-content">
+                <ul>
+                    <li><strong>Específico:</strong> Desenvolver tutora IARA com RAG para ensino socrático.</li>
+                    <li><strong>Mensurável:</strong> Reduzir retenção em 25% e atingir >90% de precisão RAG.</li>
+                    <li><strong>Atingível:</strong> Arquitetura FastAPI + MongoDB + OpenAI + HTML/JS.</li>
+                    <li><strong>Relevante:</strong> Combate evasão em cursos de Engenharia e Computação.</li>
+                    <li><strong>Temporal:</strong> Lançamento da V1.0 em 6 meses.</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- QUADRO 3: BENEFÍCIOS -->
+        <section class="canvas-card block-beneficios">
+            <div class="card-header">
+                <span class="card-icon">📈</span>
+                <span class="card-title">Benefícios</span>
+                <span class="card-subtitle">Futuro</span>
+            </div>
+            <div class="card-content">
+                <ul>
+                    <li>Desenvolvimento de raciocínio algorítmico guiado (método socrático).</li>
+                    <li>Atendimento pedagógico adaptativo disponível 24/7.</li>
+                    <li>Redução de evasão universitária em cursos STEM.</li>
+                    <li>Autonomia de docentes no gerenciamento de conteúdos e ontologias.</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- QUADRO 4: PRODUTO -->
+        <section class="canvas-card block-produto">
+            <div class="card-header">
+                <span class="card-icon">📦</span>
+                <span class="card-title">Produto</span>
+            </div>
+            <div class="card-content">
+                <ul>
+                    <li>Plataforma Web IARA (Chat interativo + Markdown + Syntax Highlighting).</li>
+                    <li>Backend Python (FastAPI) com suporte a JWT e MongoDB Atlas.</li>
+                    <li>Engine RAG com busca vetorial e catálogo de exercícios por fases (1-4).</li>
+                    <li>Painel Administrativo para upload e gestão de bases RAG.</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- QUADRO 5: REQUISITOS -->
+        <section class="canvas-card block-requisitos">
+            <div class="card-header">
+                <span class="card-icon">📝</span>
+                <span class="card-title">Requisitos</span>
+            </div>
+            <div class="card-content">
+                <ul>
+                    <li><strong>RF01:</strong> Autenticação de usuários (Alunos/Admins).</li>
+                    <li><strong>RF02:</strong> Interface de Chat com histórico persistente.</li>
+                    <li><strong>RF03:</strong> Busca semântica vetorial RAG contextualizada.</li>
+                    <li><strong>RF04:</strong> Moderação pedagógica (dicas sem dar código pronto).</li>
+                    <li><strong>RF05:</strong> Painel Admin para ingestão de novas ontologias.</li>
+                    <li><strong>RNF01:</strong> Ergonomia cognitiva (validada via Wireframe).</li>
+                    <li><strong>RNF02:</strong> Resposta do RAG + IA em até 3 segundos.</li>
+                    <li><strong>RNF03:</strong> Segurança de dados e sanitização NoSQL.</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- QUADRO 6: STAKEHOLDERS EXTERNOS -->
+        <section class="canvas-card block-stakeholders">
+            <div class="card-header">
+                <span class="card-icon">🌐</span>
+                <span class="card-title">Stakeholders Externos</span>
+            </div>
+            <div class="card-content">
+                <ul>
+                    <li>Estudantes Universitários de Computação e Engenharia.</li>
+                    <li>Professores e Coordenadores Didáticos.</li>
+                    <li>Provedores de APIs (OpenAI GPT & Embeddings).</li>
+                    <li>Banco em Nuvem (MongoDB Atlas Vector Search).</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- QUADRO 7: EQUIPE -->
+        <section class="canvas-card block-equipe">
+            <div class="card-header">
+                <span class="card-icon">👥</span>
+                <span class="card-title">Equipe</span>
+            </div>
+            <div class="card-content">
+                <ul>
+                    <li>Gerente de Projeto / Scrum Master.</li>
+                    <li>Desenvolvedor Backend (Python / FastAPI / MongoDB).</li>
+                    <li>Desenvolvedor Frontend & Designer UX/UI.</li>
+                    <li>Engenheiro de IA & Prompt Engineer.</li>
+                    <li>Curador Pedagógico (Conteudista de Algoritmos).</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- QUADRO 8: RESTRIÇÕES -->
+        <section class="canvas-card block-restricoes">
+            <div class="card-header">
+                <span class="card-icon">🚫</span>
+                <span class="card-title">Restrições</span>
+            </div>
+            <div class="card-content">
+                <ul>
+                    <li>Prazo máximo de entrega do MVP em 6 meses.</li>
+                    <li>Teto de custos mensais para consumo da API OpenAI.</li>
+                    <li>Uso estrito da stack definida (FastAPI/MongoDB/Vanilla JS).</li>
+                    <li>Conformidade total com a LGPD e privacidade dos dados.</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- QUADRO 9: PREMISSAS -->
+        <section class="canvas-card block-premissas">
+            <div class="card-header">
+                <span class="card-icon">💭</span>
+                <span class="card-title">Premissas</span>
+            </div>
+            <div class="card-content">
+                <ul>
+                    <li>Alunos possuem acesso regular a computadores/internet.</li>
+                    <li>APIs da OpenAI e MongoDB Atlas com alta disponibilidade.</li>
+                    <li>Docentes fornecerão listas e ementas atualizadas.</li>
+                    <li>Arquitetura em FastAPI atenderá o volume sem gargalos.</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- QUADRO 10: GRUPO DE ENTREGAS -->
+        <section class="canvas-card block-entregas">
+            <div class="card-header">
+                <span class="card-icon">📦</span>
+                <span class="card-title">Grupo de Entregas</span>
+            </div>
+            <div class="card-content">
+                <ul>
+                    <li><strong>E01:</strong> Elicitação, Arquitetura e Wireframes.</li>
+                    <li><strong>E02:</strong> API FastAPI, Autenticação e Banco MongoDB.</li>
+                    <li><strong>E03:</strong> Ingestão RAG (Ontologias Fases 1-4) & Fine-tuning.</li>
+                    <li><strong>E04:</strong> Frontend Web (index, admin, login) e JS.</li>
+                    <li><strong>E05:</strong> Testes de Usabilidade com Piloto e Deploy.</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- QUADRO 11: RISCOS -->
+        <section class="canvas-card block-riscos">
+            <div class="card-header">
+                <span class="card-icon">⚠️</span>
+                <span class="card-title">Riscos</span>
+            </div>
+            <div class="card-content">
+                <ul>
+                    <li>Estouro de orçamento de tokens da API OpenAI.</li>
+                    <li>"Alucinação" da IA em conceitos avançados de código.</li>
+                    <li>Baixa adoção por parte dos estudantes.</li>
+                    <li>Latência de resposta da chamada RAG/LLM.</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- QUADRO 12: LINHA DO TEMPO -->
+        <section class="canvas-card block-timeline">
+            <div class="card-header">
+                <span class="card-icon">📅</span>
+                <span class="card-title">Linha do Tempo</span>
+            </div>
+            <div class="card-content">
+                <ul>
+                    <li><strong>M1:</strong> Requisitos, Canvas & Wireframes.</li>
+                    <li><strong>M2:</strong> Backend FastAPI, MongoDB & Auth.</li>
+                    <li><strong>M3:</strong> Ingestão RAG & Estruturação de Prompts.</li>
+                    <li><strong>M4:</strong> Frontend Web & Painel Admin.</li>
+                    <li><strong>M5:</strong> Testes Piloto & Otimização RAG.</li>
+                    <li><strong>M6:</strong> Deploy MVP 1.0 & Lançamento.</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- QUADRO 13: CUSTOS -->
+        <section class="canvas-card block-custos">
+            <div class="card-header">
+                <span class="card-icon">💰</span>
+                <span class="card-title">Custos</span>
+            </div>
+            <div class="card-content">
+                <ul>
+                    <li>APIs OpenAI (Embeddings + Chat): ~$30-$100 / mês.</li>
+                    <li>MongoDB Atlas Vector Cluster: ~$0-$50 / mês.</li>
+                    <li>Hospedagem Backend (Render/AWS): ~$10-$25 / mês.</li>
+                    <li>Domínio, SSL & Licenças: ~$15 / mês.</li>
+                </ul>
+            </div>
+        </section>
+
+    </main>
+
+</body>
+</html>
