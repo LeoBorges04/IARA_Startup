@@ -30,6 +30,8 @@ def create_chat(chat_data: CreateChatRequest):
         "userId": chat_data.userId,
         "title": chat_data.title or "Nova Conversa",
         "messages": [m.dict() for m in chat_data.messages] if chat_data.messages else [],
+        "class_id": chat_data.class_id,
+        "class_name": chat_data.class_name,
         "isDeleted": False,
         "createdAt": now,
         "updatedAt": now
@@ -107,7 +109,8 @@ def process_message(chat_id: str, payload: AddMessageRequest):
     if not chat:
         raise HTTPException(status_code=404, detail="Conversa não encontrada.")
 
-    bot_reply_content = generate_chat_response(chat.get("messages", []), payload.message.content)
+    class_id = chat.get("class_id")
+    bot_reply_content = generate_chat_response(chat.get("messages", []), payload.message.content, class_id=class_id)
     bot_msg_obj = {"role": "assistant", "content": bot_reply_content}
 
     chats_collection.update_one(

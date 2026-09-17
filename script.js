@@ -1,14 +1,32 @@
-// =============================
-// IARA - Frontend OpenAI Direct + Chat History via API (MongoDB)
-// =============================
-if (localStorage.getItem("iara_logged_in") !== "true") {
+function getCurrentUser() {
+  const isLoggedIn = localStorage.getItem("iara_logged_in") === "true";
+  let userObj = {};
+  try { userObj = JSON.parse(localStorage.getItem("user") || "{}"); } catch (e) {}
+
+  const email = localStorage.getItem("iara_user_email") || userObj.email || "";
+  const name = localStorage.getItem("iara_user_name") || userObj.name || "Usuário";
+  const role = localStorage.getItem("iara_user_role") || userObj.role || "aluno";
+
+  if (isLoggedIn && email && role) {
+    localStorage.setItem("iara_logged_in", "true");
+    localStorage.setItem("iara_user_email", email);
+    localStorage.setItem("iara_user_role", role);
+    localStorage.setItem("iara_user_name", name);
+    localStorage.setItem("user", JSON.stringify({ email, name, role }));
+  }
+
+  return { isLoggedIn, email, name, role };
+}
+
+const activeUser = getCurrentUser();
+if (!activeUser.isLoggedIn) {
   window.location.replace("login.html");
 }
 
 // ===== CONSTANTES =====
 const API_URL = "http://localhost:3000/api";
-let currentUserEmail = localStorage.getItem("iara_user_email") || "user@email.com";
-let currentUserName = localStorage.getItem("iara_user_name") || "Usuário";
+let currentUserEmail = activeUser.email;
+let currentUserName = activeUser.name;
 
 // ===== ELEMENTOS DOM =====
 const chatDiv = document.getElementById('chat');
@@ -44,6 +62,17 @@ const settingsPasswordInput = document.getElementById('settings-password');
 const settingsConfirmPasswordInput = document.getElementById('settings-confirm-password');
 const settingsCancelBtn = document.getElementById('settings-cancel-btn');
 
+// Select Class Modal Elements
+const selectClassModal = document.getElementById('select-class-modal');
+const studentClassesList = document.getElementById('student-classes-list');
+const selectClassCancelBtn = document.getElementById('select-class-cancel-btn');
+
+if (selectClassCancelBtn) {
+  selectClassCancelBtn.onclick = () => {
+    if (selectClassModal) selectClassModal.style.display = 'none';
+  };
+}
+
 // Alert Modal
 function showCustomAlert(title, message, callback) {
   const alertModal = document.getElementById("custom-alert");
@@ -65,6 +94,16 @@ function showCustomAlert(title, message, callback) {
   }
 }
 
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+
+function escapeJs(str) {
+  if (!str) return '';
+  return str.replace(/'/g, "\\'").replace(/"/g, '\\"');
+}
+
 // ===== ESTADO GLOBAL DA APLICAÇÃO =====
 let chats = [];
 let currentChatId = null;
@@ -77,9 +116,10 @@ let currentAbortController = null;
 
 // Display user info in sidebar & check role for admin RAG button
 function updateProfileDisplay() {
-  currentUserEmail = localStorage.getItem("iara_user_email") || "user@email.com";
-  currentUserName = localStorage.getItem("iara_user_name") || "Usuário";
-  const userRole = localStorage.getItem("iara_user_role") || "aluno";
+  const user = getCurrentUser();
+  currentUserEmail = user.email || "user@email.com";
+  currentUserName = user.name || "Usuário";
+  const userRole = user.role || "aluno";
 
   if (userEmailDisplay) userEmailDisplay.textContent = currentUserEmail;
   if (userNameDisplay) userNameDisplay.textContent = currentUserName;
@@ -117,9 +157,60 @@ async function init() {
 
 // ===== GERENCIAMENTO DE CHATS =====
 async function createNewChat() {
+  try {
+    const res = await fetch(`${API_URL}/classes`);
+    if (res.ok) {
+      const classesList = await res.json();
+      if (Array.isArray(classesList) && classesList.length > 0) {
+        if (classesList.length === 1) {
+          executeCreateChat(classesList[0]._id, classesList[0].name);
+        } else {
+          openSelectClassModal(classesList);
+        }
+        return;
+      }
+    }
+  } catch (e) {
+    console.error("Erro ao buscar turmas:", e);
+  }
+  executeCreateChat(null, null);
+}
+
+function openSelectClassModal(classesList) {
+  if (!selectClassModal || !studentClassesList) {
+    executeCreateChat(classesList[0]._id, classesList[0].name);
+    return;
+  }
+
+  studentClassesList.innerHTML = classesList.map(c => {
+    const isProg = c.subject_type === 'programming';
+    const badgeText = isProg ? '💻 Computação' : '📝 Outra Matéria';
+    const badgeBg = isProg ? '#fdf0f5' : '#f3e8ff';
+    const badgeColor = isProg ? '#ff5c8a' : '#a855f7';
+
+    return `
+      <div class="class-modal-item" onclick="executeCreateChat('${c._id}', '${escapeJs(c.name)}')" 
+           style="background: white; border: 1.5px solid rgba(255, 92, 138, 0.2); border-radius: 14px; padding: 12px 16px; cursor: pointer; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <div style="font-weight: 700; color: #2d2b38; font-size: 14px;">${escapeHtml(c.name)}</div>
+          <div style="font-size: 12px; color: #777;">${escapeHtml(c.description || c.code || '')}</div>
+        </div>
+        <span style="background: ${badgeBg}; color: ${badgeColor}; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 12px;">${badgeText}</span>
+      </div>
+    `;
+  }).join('');
+
+  selectClassModal.style.display = 'flex';
+}
+
+async function executeCreateChat(class_id, class_name) {
+  if (selectClassModal) selectClassModal.style.display = 'none';
+
   const newChatObj = {
     userId: currentUserEmail,
-    title: "Nova Conversa"
+    title: "Nova Conversa",
+    class_id: class_id || null,
+    class_name: class_name || null
   };
 
   try {
@@ -183,6 +274,16 @@ function selectChat(id) {
   const chat = chats.find(c => c._id === id);
   if (!chat) return;
 
+  const badgeEl = document.getElementById('active-chat-class-badge');
+  if (badgeEl) {
+    if (chat.class_name) {
+      badgeEl.innerText = `📚 ${chat.class_name}`;
+      badgeEl.style.display = 'inline-block';
+    } else {
+      badgeEl.style.display = 'none';
+    }
+  }
+
   if (sidebar.classList.contains('empty-sidebar')) {
     initiateLogoAnimation();
     completeInterfaceTransition(id);
@@ -230,12 +331,31 @@ function renderSidebar() {
       btn.classList.add('active');
     }
 
+    const textContainer = document.createElement('div');
+    textContainer.style.display = 'flex';
+    textContainer.style.flexDirection = 'column';
+    textContainer.style.overflow = 'hidden';
+    textContainer.style.flex = '1';
+    textContainer.style.cursor = 'pointer';
+    textContainer.onclick = () => selectChat(chat._id);
+
     const titleSpan = document.createElement('span');
     titleSpan.classList.add('history-item-title');
     titleSpan.textContent = chat.title;
-    titleSpan.onclick = () => {
-      selectChat(chat._id);
-    };
+    textContainer.appendChild(titleSpan);
+
+    if (chat.class_name) {
+      const classSpan = document.createElement('span');
+      classSpan.style.fontSize = '10px';
+      classSpan.style.color = '#ff5c8a';
+      classSpan.style.fontWeight = '700';
+      classSpan.style.textOverflow = 'ellipsis';
+      classSpan.style.overflow = 'hidden';
+      classSpan.style.whiteSpace = 'nowrap';
+      classSpan.style.marginTop = '2px';
+      classSpan.textContent = `📚 ${chat.class_name}`;
+      textContainer.appendChild(classSpan);
+    }
 
     let indicator = null;
     if (chat._id === generatingChatId) {
@@ -276,7 +396,7 @@ function renderSidebar() {
     actionsDiv.appendChild(editBtn);
     actionsDiv.appendChild(deleteBtn);
 
-    btn.appendChild(titleSpan);
+    btn.appendChild(textContainer);
     if (indicator) btn.appendChild(indicator);
     btn.appendChild(actionsDiv);
 
@@ -442,9 +562,7 @@ if (newChatBtn) {
 
 if (logoutBtn) {
   logoutBtn.addEventListener("click", () => {
-    localStorage.removeItem("iara_logged_in");
-    localStorage.removeItem("iara_user_email");
-    localStorage.removeItem("iara_user_name");
+    localStorage.clear();
     window.location.replace("login.html");
   });
 }
@@ -655,7 +773,17 @@ function formatMessageHTML(text) {
     preEl.replaceWith(wrapper);
   });
 
-  return tempDiv.innerHTML;
+  let htmlResult = tempDiv.innerHTML;
+  htmlResult = htmlResult.replace(
+    /(<p>)?📚\s*Informação retirada do acervo de fontes da turma(<\/p>)?/gi,
+    '<div class="source-badge turma-source"><span class="source-badge-icon">📚</span> <span>Informação retirada do acervo de fontes da turma</span></div>'
+  );
+  htmlResult = htmlResult.replace(
+    /(<p>)?🌐\s*Fontes diversas da internet(<\/p>)?/gi,
+    '<div class="source-badge internet-source"><span class="source-badge-icon">🌐</span> <span>Fontes diversas da internet</span></div>'
+  );
+
+  return htmlResult;
 }
 
 // Chat UI Bubbles (Nodes 156-44 & 156-45)

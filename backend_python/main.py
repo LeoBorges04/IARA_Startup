@@ -16,6 +16,7 @@ from routes.auth import router as auth_router
 from routes.chats import router as chats_router
 from routes.admin import router as admin_router
 from routes.documents import router as documents_router
+from routes.classes import router as classes_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -50,6 +51,7 @@ app.include_router(auth_router)
 app.include_router(chats_router)
 app.include_router(admin_router)
 app.include_router(documents_router)
+app.include_router(classes_router)
 
 # Serve o frontend estático na raiz
 frontend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))

@@ -113,14 +113,22 @@ document.getElementById("register-form").addEventListener("submit", async functi
         return;
     }
 
+    const userRole = data.user ? (data.user.role || role) : role;
+    const userObj = { email: data.user ? data.user.email : email, name: data.user ? data.user.name : name, role: userRole };
+
     // Auto-login after successful registration (RF11)
     localStorage.setItem("iara_logged_in", "true");
-    localStorage.setItem("iara_user_email", data.user.email);
-    localStorage.setItem("iara_user_name", data.user.name);
-    localStorage.setItem("iara_user_role", data.user.role || role);
+    localStorage.setItem("iara_user_email", userObj.email);
+    localStorage.setItem("iara_user_name", userObj.name);
+    localStorage.setItem("iara_user_role", userObj.role);
+    localStorage.setItem("user", JSON.stringify(userObj));
 
     showCustomAlert("Sucesso", data.message || "Cadastro realizado com sucesso!", () => {
-        window.location.replace("index.html");
+        if (userRole === 'professor' || userRole === 'admin') {
+            window.location.replace("selecionar_turma.html");
+        } else {
+            window.location.replace("index.html");
+        }
     });
   } catch (err) {
       showCustomAlert("Erro de Conexão", "Falha ao se conectar com o servidor da base de dados.");

@@ -20,6 +20,9 @@ chats_collection = db["chats"]
 document_chunks_collection = db["document_chunks"]
 code_examples_collection = db["code_examples"]
 
+# Coleção de Turmas
+classes_collection = db["classes"]
+
 # Coleções para a nova pipeline RAG de 2 bases
 exercise_catalog_collection = db["exercise_catalog"]
 concept_base_collection = db["concept_base"]

@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IARA - Seleção de Turmas</title>
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #fdf5f8;
+            color: #2d2b38;
+            min-height: 100vh;
+            overflow-y: auto;
+        }
+
+        .admin-header {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background-color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(255, 92, 138, 0.08);
+            border-bottom: 1px solid rgba(255, 92, 138, 0.15);
+            zoom: 1.2;
+        }
+
+        .admin-header h1 {
+            background: linear-gradient(135deg, rgb(255, 92, 138) 0%, rgb(168, 85, 247) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 0;
+            font-size: 22px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-email-tag {
+            font-size: 13px;
+            color: #787486;
+            font-weight: 600;
+            background: #fdf0f5;
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 92, 138, 0.15);
+        }
+
+        .logout-btn {
+            padding: 8px 18px;
+            background: linear-gradient(135deg, #ff5c8a 0%, #a855f7 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 13px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(255, 92, 138, 0.25);
+        }
+
+        .logout-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(255, 92, 138, 0.35);
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 30px auto;
+            padding: 0 20px;
+            zoom: 1.2;
+        }
+
+        .page-banner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 24px 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(255, 92, 138, 0.06);
+            border: 1px solid rgba(255, 92, 138, 0.12);
+            margin-bottom: 25px;
+        }
+
+        .page-banner h2 {
+            margin: 0 0 6px 0;
+            font-size: 22px;
+            font-weight: 800;
+            color: #1a1a2e;
+        }
+
+        .page-banner p {
+            margin: 0;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .btn-create-class {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #ff5c8a 0%, #a855f7 100%);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 0 6px 18px rgba(255, 92, 138, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .btn-create-class:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 22px rgba(255, 92, 138, 0.4);
+        }
+
+        .classes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        .class-card {
+            background: white;
+            border-radius: 20px;
+            padding: 24px;
+            border: 1px solid rgba(255, 92, 138, 0.15);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.03);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+            min-width: 0;
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .class-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 32px rgba(255, 92, 138, 0.12);
+            border-color: rgba(255, 92, 138, 0.35);
+        }
+
+        .class-badge {
+            align-self: flex-start;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        .badge-programming {
+            background: #fdf0f5;
+            color: #ff5c8a;
+            border: 1px solid rgba(255, 92, 138, 0.3);
+        }
+
+        .badge-custom {
+            background: #f3e8ff;
+            color: #a855f7;
+            border: 1px solid rgba(168, 85, 247, 0.3);
+        }
+
+        .class-card h3 {
+            margin: 0 0 8px 0;
+            font-size: 18px;
+            font-weight: 800;
+            color: #1a1a2e;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+        }
+
+        .class-code {
+            font-size: 12px;
+            color: #888;
+            font-weight: 600;
+            margin-bottom: 12px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .class-desc {
+            font-size: 13px;
+            color: #555;
+            line-height: 1.4;
+            margin-bottom: 20px;
+            flex-grow: 1;
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .btn-enter-class {
+            width: 100%;
+            padding: 10px 16px;
+            background: #fdf0f5;
+            color: #ff5c8a;
+            border: 1px solid rgba(255, 92, 138, 0.25);
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .class-card:hover .btn-enter-class {
+            background: linear-gradient(135deg, #ff5c8a 0%, #a855f7 100%);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 4px 14px rgba(255, 92, 138, 0.3);
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 15, 26, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.2s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-card {
+            background: white;
+            border-radius: 24px;
+            width: 90%;
+            max-width: 520px;
+            padding: 32px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 92, 138, 0.2);
+            transform: translateY(20px);
+            transition: all 0.2s ease;
+            zoom: 1.1;
+        }
+
+        .modal-overlay.active .modal-card {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 800;
+            color: #1a1a2e;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 22px;
+            color: #888;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 700;
+            color: #2d2b38;
+            margin-bottom: 6px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 92, 138, 0.25);
+            font-family: inherit;
+            font-size: 13px;
+            box-sizing: border-box;
+            outline: none;
+            transition: border 0.2s;
+        }
+
+        .form-control:focus {
+            border-color: #ff5c8a;
+            box-shadow: 0 0 0 3px rgba(255, 92, 138, 0.15);
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .radio-options {
+            display: flex;
+            gap: 16px;
+            margin-top: 6px;
+        }
+
+        .radio-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .btn-cancel {
+            padding: 10px 20px;
+            background: #f0edf4;
+            color: #555;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .btn-submit {
+            padding: 10px 22px;
+            background: linear-gradient(135deg, #ff5c8a 0%, #a855f7 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(255, 92, 138, 0.3);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 50px 20px;
+            background: white;
+            border-radius: 20px;
+            border: 1px dashed rgba(255, 92, 138, 0.3);
+            grid-column: 1 / -1;
+        }
+
+        .empty-state h4 {
+            margin: 0 0 8px 0;
+            font-size: 18px;
+            color: #2d2b38;
+        }
+
+        .empty-state p {
+            margin: 0;
+            color: #888;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="admin-header">
+        <h1>
+            <img src="assets/NewIaraLogo.png" alt="IARA Logo" class="brand-logo-img-admin" />
+            IARA - Seleção de Turmas
+        </h1>
+        <div class="user-nav-actions">
+            <span class="user-email-tag" id="user-email-display">professor@iara.edu.br</span>
+            <button class="logout-btn" onclick="logout()">Sair</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="page-banner">
+            <div>
+                <h2>Gerenciamento de Turmas</h2>
+                <p>Selecione a turma para gerenciar os materiais RAG ou crie uma nova turma.</p>
+            </div>
+            <button class="btn-create-class" onclick="openCreateModal()">
+                <span>+</span> Criar Nova Turma
+            </button>
+        </div>
+
+        <div class="classes-grid" id="classes-container">
+            <!-- Turmas serão carregadas via Javascript -->
+        </div>
+    </div>
+
+    <!-- Modal para Criar Nova Turma -->
+    <div class="modal-overlay" id="create-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Criar Nova Turma</h3>
+                <button class="modal-close" onclick="closeCreateModal()">&times;</button>
+            </div>
+            <form id="create-class-form" onsubmit="handleCreateClass(event)">
+                <div class="form-group">
+                    <label for="class-name">Nome da Turma</label>
+                    <input type="text" id="class-name" class="form-control" placeholder="Ex: Algoritmos e Programação C++" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="class-code">Código Identificador (Opcional)</label>
+                    <input type="text" id="class-code" class="form-control" placeholder="Ex: COMP-2026-1">
+                </div>
+
+                <div class="form-group">
+                    <label for="class-description">Descrição (Opcional)</label>
+                    <input type="text" id="class-description" class="form-control" placeholder="Ex: Turma do 1º semestre de Computação">
+                </div>
+
+                <div class="form-group">
+                    <label>Tipo da Disciplina</label>
+                    <div class="radio-options">
+                        <label class="radio-label">
+                            <input type="radio" name="subject_type" value="programming" checked onchange="toggleGuidelinesInput()">
+                            💻 Programação (PBL Estrito)
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="subject_type" value="custom" onchange="toggleGuidelinesInput()">
+                            📝 Outra Matéria (Diretrizes Customizadas)
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group" id="guidelines-group" style="display: none;">
+                    <label for="class-guidelines">Diretrizes da IARA para esta Turma</label>
+                    <textarea id="class-guidelines" class="form-control" rows="4"
+                        placeholder="Ex: Nesta turma de Biologia Celular, a IARA deve atuar como tutora socrática, incentivando o aluno a correlacionar organelas celulares com funções fisiológicas..."></textarea>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel" onclick="closeCreateModal()">Cancelar</button>
+                    <button type="submit" class="btn-submit">Criar Turma</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "http://localhost:3000/api";
+
+        function getCurrentUser() {
+            const isLoggedIn = localStorage.getItem("iara_logged_in") === "true";
+            let userObj = {};
+            try { userObj = JSON.parse(localStorage.getItem("user") || "{}"); } catch (e) {}
+
+            const email = localStorage.getItem("iara_user_email") || userObj.email || "";
+            const name = localStorage.getItem("iara_user_name") || userObj.name || "Usuário";
+            const role = localStorage.getItem("iara_user_role") || userObj.role || "aluno";
+
+            // Sincroniza as chaves se necessário para garantir permanência
+            if (isLoggedIn && email && role) {
+                localStorage.setItem("iara_logged_in", "true");
+                localStorage.setItem("iara_user_email", email);
+                localStorage.setItem("iara_user_role", role);
+                localStorage.setItem("iara_user_name", name);
+                localStorage.setItem("user", JSON.stringify({ email, name, role }));
+            }
+
+            return { isLoggedIn, email, name, role };
+        }
+
+        const currentUser = getCurrentUser();
+
+        if (!currentUser.isLoggedIn || (currentUser.role !== 'professor' && currentUser.role !== 'admin')) {
+            alert('Acesso restrito para professores.');
+            window.location.href = 'login.html';
+        } else {
+            document.getElementById('user-email-display').innerText = currentUser.email;
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = 'login.html';
+        }
+
+        function openCreateModal() {
+            document.getElementById('create-modal').classList.add('active');
+        }
+
+        function closeCreateModal() {
+            document.getElementById('create-modal').classList.remove('active');
+            document.getElementById('create-class-form').reset();
+            toggleGuidelinesInput();
+        }
+
+        function toggleGuidelinesInput() {
+            const isCustom = document.querySelector('input[name="subject_type"]:checked').value === 'custom';
+            document.getElementById('guidelines-group').style.display = isCustom ? 'block' : 'none';
+        }
+
+        async function loadClasses() {
+            const container = document.getElementById('classes-container');
+            container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #888;">Carregando turmas...</p>';
+
+            try {
+                // Se for prof.master ou admin, traz todas. Caso contrário, traz as turmas do professor.
+                const endpoint = (currentUser.email === 'prof.master@iara.edu.br' || currentUser.role === 'admin')
+                    ? `${API_URL}/classes`
+                    : `${API_URL}/classes/teacher/${encodeURIComponent(currentUser.email)}`;
+
+                const res = await fetch(endpoint);
+                const classes = await res.json();
+
+                if (!Array.isArray(classes) || classes.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <h4>Nenhuma turma encontrada</h4>
+                            <p>Clique em "+ Criar Nova Turma" para cadastrar sua primeira turma.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = classes.map(c => {
+                    const isProg = c.subject_type === 'programming';
+                    const badgeClass = isProg ? 'badge-programming' : 'badge-custom';
+                    const badgeText = isProg ? '💻 Computação (PBL Estrito)' : '📝 Outra Matéria (Diretrizes Custom)';
+                    const desc = c.description || 'Sem descrição cadastrada.';
+                    const codeText = c.code ? `Código: ${c.code}` : '';
+
+                    return `
+                        <div class="class-card">
+                            <div>
+                                <span class="class-badge ${badgeClass}">${badgeText}</span>
+                                <h3 title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</h3>
+                                ${codeText ? `<div class="class-code">${escapeHtml(codeText)}</div>` : ''}
+                                <div class="class-desc">${escapeHtml(desc)}</div>
+                            </div>
+                            <button class="btn-enter-class" onclick="selectClass('${c._id}', '${escapeJs(c.name)}')">
+                                Gerenciar Conteúdo & RAG ➔
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+            } catch (err) {
+                console.error('Erro ao carregar turmas:', err);
+                container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #ff5c8a;">Erro ao carregar turmas do servidor.</p>';
+            }
+        }
+
+        function selectClass(classId, className) {
+            localStorage.setItem('iara_active_class_id', classId);
+            localStorage.setItem('iara_active_class_name', className);
+            window.location.href = 'admin.html';
+        }
+
+        async function handleCreateClass(e) {
+            e.preventDefault();
+            const name = document.getElementById('class-name').value.trim();
+            const code = document.getElementById('class-code').value.trim();
+            const description = document.getElementById('class-description').value.trim();
+            const subject_type = document.querySelector('input[name="subject_type"]:checked').value;
+            const custom_guidelines = document.getElementById('class-guidelines').value.trim();
+
+            if (!name) return;
+
+            try {
+                const res = await fetch(`${API_URL}/classes`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        teacher_email: currentUser.email,
+                        name,
+                        code: code || null,
+                        description: description || null,
+                        subject_type,
+                        custom_guidelines: subject_type === 'custom' ? custom_guidelines : null
+                    })
+                });
+
+                if (!res.ok) {
+                    const errData = await res.json();
+                    alert('Erro ao criar turma: ' + (errData.detail || 'Erro desconhecido.'));
+                    return;
+                }
+
+                const newClass = await res.json();
+                closeCreateModal();
+                selectClass(newClass._id, newClass.name);
+            } catch (err) {
+                console.error('Erro ao criar turma:', err);
+                alert('Erro de conexão ao criar turma.');
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        function escapeJs(str) {
+            if (!str) return '';
+            return str.replace(/'/g, "\\'").replace(/"/g, '\\"');
+        }
+
+        loadClasses();
+    </script>
+</body>
+
+</html>

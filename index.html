@@ -59,8 +59,9 @@
         <main class="main-content">
             <header class="top-header">
                 <button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
-                <div class="top-header-title">
+                <div class="top-header-title" style="display: flex; align-items: center; gap: 10px;">
                     <span class="header-logo-text">IARA</span>
+                    <span id="active-chat-class-badge" style="display: none; font-size: 11px; padding: 3px 10px; border-radius: 12px; background: #fdf0f5; color: #ff5c8a; border: 1px solid rgba(255, 92, 138, 0.25); font-weight: 700;"></span>
                 </div>
                 <div class="top-header-right">
                     <a href="admin.html" id="admin-rag-btn" class="header-icon-btn" title="Painel de Administração / Materiais RAG" style="display: none;">
@@ -172,6 +173,20 @@
             <div class="modal-actions">
                 <button class="modal-btn cancel-btn" id="delete-cancel-btn">Cancelar</button>
                 <button class="modal-btn danger-btn" id="delete-confirm-btn">Excluir</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Select Class Modal for New Chat -->
+    <div class="modal-overlay" id="select-class-modal" style="display: none;">
+        <div class="modal-container" style="max-width: 480px;">
+            <h3 class="modal-title highlight-pink">Escolha a Turma da Conversa</h3>
+            <p class="modal-text">Selecione qual turma/matéria esta conversa abrangerá para ativar o acervo RAG correto:</p>
+            <div id="student-classes-list" style="margin: 20px 0; display: flex; flex-direction: column; gap: 10px; max-height: 250px; overflow-y: auto;">
+                <!-- Lista de turmas dinamicamente renderizada -->
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn cancel-btn" id="select-class-cancel-btn">Cancelar</button>
             </div>
         </div>
     </div>

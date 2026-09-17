@@ -196,7 +196,7 @@ def semantic_chunk_text_with_llm(text_content: str, filename: str) -> List[Dict[
     return all_structured_chunks
 
 # Mapeamento das Coleções Vetoriais no MongoDB Atlas
-from database import exercise_catalog_collection, concept_base_collection
+from database import exercise_catalog_collection, concept_base_collection, classes_collection, document_chunks_collection
 
 def chunk_markdown_by_h2(text_content: str) -> List[Dict[str, Any]]:
     """
@@ -239,7 +239,76 @@ def extract_concepts_from_exercise_text(text: str) -> List[str]:
                 concepts.append(cleaned)
     return concepts
 
-def ingest_exercise_catalog(filename: str, content: Optional[str] = None, file_path: Optional[str] = None) -> int:
+def update_class_rag_summary(class_id: str) -> str:
+    """
+    Identifica os assuntos e materiais contidos no acervo RAG da turma.
+    Gera um resumo estruturado dos tópicos cobertos e armazena no documento da turma no MongoDB.
+    """
+    if not class_id:
+        return ""
+
+    try:
+        from bson import ObjectId
+        obj_id = ObjectId(class_id)
+    except Exception:
+        return ""
+
+    filter_query = {"class_id": class_id}
+
+    chunks = list(document_chunks_collection.find(filter_query, {"filename": 1, "title": 1, "location": 1}))
+    concepts = list(concept_base_collection.find(filter_query, {"filename": 1, "title": 1, "location": 1}))
+    exercises = list(exercise_catalog_collection.find(filter_query, {"filename": 1, "title": 1, "concepts_involved": 1}))
+
+    filenames = set()
+    topic_titles = set()
+    concepts_list = set()
+
+    for c in chunks + concepts:
+        if c.get("filename"):
+            filenames.add(c.get("filename"))
+        t = c.get("location") or c.get("title")
+        if t and len(t) > 3 and not str(t).startswith("Chunk Semântico"):
+            topic_titles.add(str(t).strip())
+
+    for e in exercises:
+        if e.get("filename"):
+            filenames.add(e.get("filename"))
+        for conc in e.get("concepts_involved", []):
+            if conc and len(str(conc)) > 2:
+                concepts_list.add(str(conc).strip())
+
+    if not filenames and not topic_titles and not concepts_list:
+        rag_summary = "Nenhum documento cadastrado no acervo RAG desta turma até o momento."
+    else:
+        files_str = ", ".join(f"'{f}'" for f in sorted(list(filenames)))
+        topics_str = ", ".join(sorted(list(topic_titles))[:15])
+        conc_str = ", ".join(sorted(list(concepts_list))[:15])
+
+        summary_parts = []
+        if files_str:
+            summary_parts.append(f"Materiais no acervo RAG: {files_str}")
+        if topics_str:
+            summary_parts.append(f"Tópicos e Seções cobertas: {topics_str}")
+        if conc_str:
+            summary_parts.append(f"Conceitos e Exercícios acervados: {conc_str}")
+
+        rag_summary = "\n".join(summary_parts)
+
+    try:
+        from datetime import datetime
+        classes_collection.update_one(
+            {"_id": obj_id},
+            {"$set": {
+                "rag_summary": rag_summary,
+                "rag_summary_updated_at": datetime.utcnow()
+            }}
+        )
+    except Exception as e:
+        logger.error(f"Erro ao salvar rag_summary da turma {class_id}: {e}")
+
+    return rag_summary
+
+def ingest_exercise_catalog(filename: str, content: Optional[str] = None, file_path: Optional[str] = None, class_id: Optional[str] = None) -> int:
     """
     Ingere documentos no Catálogo de Exercícios (Base 1).
     NUNCA contém códigos ou soluções. Índice semântico exclusivo por '## '.
@@ -259,7 +328,7 @@ def ingest_exercise_catalog(filename: str, content: Optional[str] = None, file_p
         chunks_meta = [{"title": filename, "content": raw_text, "location": filename}]
 
     chunks_text = [c["content"] for c in chunks_meta]
-    logger.info(f"Base 1 (Exercícios): Gerando embeddings para {len(chunks_text)} documentos de '{filename}'...")
+    logger.info(f"Base 1 (Exercícios): Gerando embeddings para {len(chunks_text)} documentos de '{filename}' (Turma: {class_id})...")
     embeddings = generate_embeddings_batch(chunks_text)
 
     docs_to_insert = []
@@ -273,16 +342,22 @@ def ingest_exercise_catalog(filename: str, content: Optional[str] = None, file_p
             "content": c_meta["content"],
             "concepts_involved": concepts,
             "embedding": emb,
-            "category": "exercise"
+            "category": "exercise",
+            "class_id": class_id
         })
 
     if docs_to_insert:
-        exercise_catalog_collection.delete_many({"filename": filename})
+        del_filter = {"filename": filename}
+        if class_id:
+            del_filter["class_id"] = class_id
+        exercise_catalog_collection.delete_many(del_filter)
         result = exercise_catalog_collection.insert_many(docs_to_insert)
+        if class_id:
+            update_class_rag_summary(class_id)
         return len(result.inserted_ids)
     return 0
 
-def ingest_concept_base(filename: str, content: Optional[str] = None, file_path: Optional[str] = None, category: str = "concept") -> int:
+def ingest_concept_base(filename: str, content: Optional[str] = None, file_path: Optional[str] = None, category: str = "concept", class_id: Optional[str] = None) -> int:
     """
     Ingere documentos na Base Conceitual (Base 2).
     Contém a explicação teórica e os esqueletos genéricos por '## '.
@@ -302,7 +377,7 @@ def ingest_concept_base(filename: str, content: Optional[str] = None, file_path:
         chunks_meta = [{"title": filename, "content": raw_text, "location": filename}]
 
     chunks_text = [c["content"] for c in chunks_meta]
-    logger.info(f"Base 2 (Conceitual): Gerando embeddings para {len(chunks_text)} documentos de '{filename}'...")
+    logger.info(f"Base 2 (Conceitual): Gerando embeddings para {len(chunks_text)} documentos de '{filename}' (Turma: {class_id})...")
     embeddings = generate_embeddings_batch(chunks_text)
 
     docs_to_insert = []
@@ -314,24 +389,33 @@ def ingest_concept_base(filename: str, content: Optional[str] = None, file_path:
             "location": c_meta.get("location", filename),
             "content": c_meta["content"],
             "embedding": emb,
-            "category": category
+            "category": category,
+            "class_id": class_id
         })
 
     if docs_to_insert:
-        concept_base_collection.delete_many({"filename": filename})
-        document_chunks_collection.delete_many({"filename": filename})
+        del_filter = {"filename": filename}
+        if class_id:
+            del_filter["class_id"] = class_id
+        concept_base_collection.delete_many(del_filter)
+        document_chunks_collection.delete_many(del_filter)
         
         concept_base_collection.insert_many(docs_to_insert)
         result = document_chunks_collection.insert_many(docs_to_insert)
+        if class_id:
+            update_class_rag_summary(class_id)
         return len(result.inserted_ids)
     return 0
 
-def ingest_document(filename: str, content: Optional[str] = None, file_path: Optional[str] = None, category: str = "concept") -> int:
-    """Roteador principal de ingestão."""
+def ingest_document(filename: str, content: Optional[str] = None, file_path: Optional[str] = None, category: str = "concept", class_id: Optional[str] = None) -> int:
+    """Roteador principal de ingestão com suporte a class_id."""
     if category == "exercise":
-        return ingest_exercise_catalog(filename, content=content, file_path=file_path)
+        res = ingest_exercise_catalog(filename, content=content, file_path=file_path, class_id=class_id)
     else:
-        return ingest_concept_base(filename, content=content, file_path=file_path, category=category)
+        res = ingest_concept_base(filename, content=content, file_path=file_path, category=category, class_id=class_id)
+    if class_id:
+        update_class_rag_summary(class_id)
+    return res
 
 def cosine_similarity(a: List[float], b: List[float]) -> float:
     vec_a = np.array(a, dtype=np.float32)
@@ -342,10 +426,14 @@ def cosine_similarity(a: List[float], b: List[float]) -> float:
         return 0.0
     return float(np.dot(vec_a, vec_b) / (norm_a * norm_b))
 
-def search_exercise_catalog(query: str) -> Optional[Dict[str, Any]]:
-    """Busca o exercício correspondente na Base 1 (Catálogo de Exercícios)."""
+def search_exercise_catalog(query: str, class_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    """Busca o exercício correspondente na Base 1 (Catálogo de Exercícios) com filtro de turma."""
     query_vector = generate_embedding(query)
-    all_docs = list(exercise_catalog_collection.find({}, {"filename": 1, "title": 1, "content": 1, "concepts_involved": 1, "embedding": 1}))
+    filter_query = {}
+    if class_id:
+        filter_query["class_id"] = class_id
+
+    all_docs = list(exercise_catalog_collection.find(filter_query, {"filename": 1, "title": 1, "content": 1, "concepts_involved": 1, "embedding": 1, "class_id": 1}))
     if not all_docs:
         return None
 
@@ -361,15 +449,17 @@ def search_exercise_catalog(query: str) -> Optional[Dict[str, Any]]:
 
     return best_doc if (best_doc and best_score > 0.45) else None
 
-def search_concept_base(query: str, top_k: int = 3, category: Optional[str] = None) -> List[Dict[str, Any]]:
-    """Busca tópicos conceituais e livros acervados na Base 2 e no acervo de documentos."""
+def search_concept_base(query: str, top_k: int = 3, category: Optional[str] = None, class_id: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Busca tópicos conceituais e livros acervados na Base 2 e no acervo de documentos filtrando por turma."""
     query_vector = generate_embedding(query)
     filter_query = {}
     if category:
         filter_query["category"] = category
+    if class_id:
+        filter_query["class_id"] = class_id
 
-    docs_concept = list(concept_base_collection.find(filter_query, {"filename": 1, "title": 1, "location": 1, "content": 1, "embedding": 1, "category": 1}))
-    docs_books = list(document_chunks_collection.find(filter_query, {"filename": 1, "title": 1, "location": 1, "content": 1, "embedding": 1, "category": 1}))
+    docs_concept = list(concept_base_collection.find(filter_query, {"filename": 1, "title": 1, "location": 1, "content": 1, "embedding": 1, "category": 1, "class_id": 1}))
+    docs_books = list(document_chunks_collection.find(filter_query, {"filename": 1, "title": 1, "location": 1, "content": 1, "embedding": 1, "category": 1, "class_id": 1}))
 
     all_docs = docs_concept + docs_books
     if not all_docs:
@@ -385,9 +475,9 @@ def search_concept_base(query: str, top_k: int = 3, category: Optional[str] = No
     scored_docs.sort(key=lambda x: x[0], reverse=True)
     return [doc for score, doc in scored_docs[:top_k] if score > 0.35]
 
-def search_relevant_chunks(query: str, top_k: int = 4, category: Optional[str] = None) -> List[Dict[str, Any]]:
+def search_relevant_chunks(query: str, top_k: int = 4, category: Optional[str] = None, class_id: Optional[str] = None) -> List[Dict[str, Any]]:
     """Wrapper para compatibilidade."""
-    return search_concept_base(query, top_k=top_k, category=category)
+    return search_concept_base(query, top_k=top_k, category=category, class_id=class_id)
 
 def detect_user_intent(user_message: str) -> str:
     """
@@ -541,24 +631,24 @@ for (int i = 0; i < NOME_CONSTANTE; i++) {
 Pegue o seu código da Etapa 1 e inclua nele o processamento da Etapa 2, separando a busca do maior, a busca do menor e a contagem de aprovados em laços `for` simples e independentes.
 """
 
-SYSTEM_PROMPT = f"""Você é IARA, uma tutora virtual de programação e raciocínio algorítmico baseada em Aprendizagem Baseada em Problemas (PBL Interativo).
+SYSTEM_PROMPT = f"""Você é IARA, uma tutora virtual baseada em Aprendizagem Baseada em Problemas (PBL Interativo) para matérias de computação e algoritmos.
 Sua comunicação é ESTRITAMENTE OBJETIVA, DIRETA E CONCISA. É PROIBIDO o uso de frases motivacionais prolixas, saudações longas ou emojis.
 
 === DIRETRIZES DE ESCOPO, EMPATIA E RESTRIÇÃO DE CONTEÚDO (USO DA BASE DE DADOS RAG) ===
 1. COMPREENSÃO E INTERPRETAÇÃO FLEXÍVEL DAS ENTRADAS:
    - A IARA deve compreender e interpretar qualquer entrada do usuário independentemente do assunto, linguagem informal ou erros de digitação (ex: "fzr", "vetors", "algoritimo", "laço for", etc.).
-   - Para saudações simples ou apresentações (ex: "Oi", "Tudo bem?", "Quem é você?"), responda de forma cortês, amigável e breve, apresentando-se como IARA, a tutora virtual de programação do curso.
+   - Para saudações simples ou apresentações (ex: "Oi", "Tudo bem?", "Quem é você?"), responda de forma cortês, amigável e breve, apresentando-se como IARA, a tutora virtual da turma.
 
 2. TRATAMENTO DE ERROS DE DIGITAÇÃO E LINGUAGEM INFORMAL EM PROGRAMAÇÃO:
    - Interprete a intenção real de programação do aluno mesmo se houver erros ortográficos, abreviações ou digitação informal.
    - Se a intenção corresponder a conceitos cobertos no acervo RAG (ex: vetores, laços, condicionais, funções, C++, etc.), ensine e guie o aluno normalmente.
 
 3. MANEJO EMPÁTICO DE ASSUNTOS FORA DA BASE DE CONHECIMENTO (FORA DO RAG / OFF-TOPIC):
-   - A IARA DEVE ensinar APENAS os assuntos e matérias que estejam presentes e cobertos em sua base de dados RAG (livros, apostilas, conceitos e exercícios disponibilizados pelo professor).
+   - A IARA DEVE ensinar APENAS os assuntos e matérias que estejam presentes e cobertos em sua base de dados RAG da turma (livros, apostilas, conceitos e exercícios disponibilizados pelo professor).
    - Quando o aluno perguntar ou mencionar assuntos que NÃO ESTÃO COBERTOS no acervo RAG (por exemplo: "Flamengo", futebol, receitas, política, celebridades, outras matérias não cadastradas ou conversa aleatória):
      * A IARA NÃO DEVE engajar na explicação nem responder/pesquisar sobre o assunto externo.
      * A IARA DEVE responder de forma amigável, acolhedora, educada e natural (JAMAIS dura, fria, robótica ou repetição mecânica de frases prontas).
-     * Reconheça brevemente o que o aluno disse, explique com clareza e empatia que seu papel como tutora virtual é dedicado exclusivamente aos conteúdos de programação disponibilizados pelo professor no acervo, e convide-o gentilmente a trazer suas dúvidas ou estudos de programação.
+     * Reconheça brevemente o que o aluno disse, explique com clareza e empatia que seu papel como tutora virtual nesta turma é dedicado exclusivamente aos conteúdos disponibilizados pelo professor no acervo, e convide-o gentilmente a trazer suas dúvidas ou estudos sobre a matéria da turma.
 
 4. USO DA IA PARA COMPLEMENTAR ASSUNTOS JÁ COBERTOS:
    - Se o assunto solicitado ESTIVER presente nos documentos do acervo RAG, a IARA ensina o tópico embasando-se no acervo.
@@ -609,25 +699,44 @@ def extract_previously_cited_sources(messages: List[Dict[str, str]]) -> set:
                     cited_set.add(it)
     return cited_set
 
-def generate_chat_response(messages: List[Dict[str, str]], user_message: str) -> str:
+def generate_chat_response(messages: List[Dict[str, str]], user_message: str, class_id: Optional[str] = None) -> str:
     """
-    Pipeline de Consulta RAG Adaptativo PBL Interativo IARA 6.0.
+    Pipeline de Consulta RAG Adaptativo PBL Interativo IARA 6.0 com suporte a Múltiplas Turmas.
     """
     client = get_openai_client()
     if not client:
         return "Erro: Chave de API da OpenAI não configurada ou inválida no servidor."
 
+    from bson import ObjectId
+    class_doc = None
+    subject_type = "programming"
+    custom_guidelines = None
+    class_name = ""
+    rag_summary = ""
+    if class_id:
+        try:
+            class_doc = classes_collection.find_one({"_id": ObjectId(class_id)})
+            if class_doc:
+                subject_type = class_doc.get("subject_type", "programming")
+                custom_guidelines = class_doc.get("custom_guidelines")
+                class_name = class_doc.get("name", "")
+                rag_summary = class_doc.get("rag_summary")
+                if not rag_summary:
+                    rag_summary = update_class_rag_summary(class_id)
+        except Exception as e:
+            logger.error(f"Erro ao buscar turma com ID '{class_id}': {e}")
+
     from services.code_guardrail_service import detect_bypass_or_merge_request
     is_bypass_request = detect_bypass_or_merge_request(user_message)
     user_submitted_code = has_student_code(user_message)
     intent = detect_user_intent(user_message)
-    logger.info(f"Pipeline RAG PBL: Intenção = '{intent}', Código do Aluno = {user_submitted_code}, Pedido de Junção/Bypass = {is_bypass_request}")
+    logger.info(f"Pipeline RAG (Turma: {class_id}, Tipo: {subject_type}): Intenção = '{intent}', Código = {user_submitted_code}, Bypass = {is_bypass_request}")
 
-    # 1. Busca de trechos no acervo RAG (Base Conceitual e Livros)
-    concept_chunks = search_concept_base(user_message, top_k=4, category=None)
+    # 1. Busca de trechos no acervo RAG filtrando por turma (Base Conceitual e Livros)
+    concept_chunks = search_concept_base(user_message, top_k=4, category=None, class_id=class_id)
 
     # 2. Busca no catálogo de exercícios (se aplicável)
-    exercise_match = search_exercise_catalog(user_message)
+    exercise_match = search_exercise_catalog(user_message, class_id=class_id)
     concepts_to_search = []
     if exercise_match:
         logger.info(f"Pipeline RAG PBL: Exercício clássico reconhecido: '{exercise_match.get('title')}'")
@@ -637,7 +746,7 @@ def generate_chat_response(messages: List[Dict[str, str]], user_message: str) ->
 
     additional_chunks = []
     for concept in concepts_to_search:
-        c_retrieved = search_concept_base(concept, top_k=3, category=None)
+        c_retrieved = search_concept_base(concept, top_k=3, category=None, class_id=class_id)
         additional_chunks.extend(c_retrieved)
 
     all_chunks = concept_chunks + additional_chunks
@@ -654,7 +763,7 @@ def generate_chat_response(messages: List[Dict[str, str]], user_message: str) ->
     rag_context = ""
     citation_items = []
     if all_retrieved:
-        rag_context = "\n--- CONCEITOS E LIVROS RECUPERADOS DO ACERVO (RAG) ---\n"
+        rag_context = "\n--- CONCEITOS E MATERIAIS RECUPERADOS DO ACERVO DA TURMA (RAG) ---\n"
         for c in all_retrieved:
             fn = c.get("filename")
             loc = c.get("location") or c.get("title")
@@ -666,64 +775,134 @@ def generate_chat_response(messages: List[Dict[str, str]], user_message: str) ->
     previously_cited = extract_previously_cited_sources(messages)
     new_citations = [c for c in unique_citations if c not in previously_cited]
 
-    # Construção do prompt instrucional
-    augmented_system_prompt = SYSTEM_PROMPT
+    # Construção do prompt instrucional dinâmico com HIERARQUIA DO ACERVO E FONTE DE PESQUISA
+    BASE_RAG_KNOWLEDGE_PROMPT = f"""Você é IARA, a tutora virtual e assistente pedagógica da turma '{class_name if class_name else 'IARA'}'.
 
-    if not all_retrieved:
+=== 🔴 REGRA SUPREMA: PESQUISA E EMBASAMENTO EM CONTEÚDO (ACERVO RAG vs PESQUISA INTERNET) ===
+
+1. BASE PRINCIPAL DE PESQUISA (ACERVO RAG DA TURMA):
+   - O acervo RAG disponibilizado pelo professor é sua fonte PRINCIPAL e PRIMÁRIA de consulta sobre o assunto da turma.
+   - Sumário / Assuntos cobertos pela turma:
+     {rag_summary if rag_summary else 'Acervo RAG da turma.'}
+
+2. EXPANSÃO VIA PESQUISA EXTERNA (INTERNET / CONHECIMENTO GERAL):
+   - Se o aluno fizer uma dúvida que TENHA RELAÇÃO com o assunto/sumário da turma indicado acima, porém os detalhes ou a resposta específica NÃO estiverem totalmente nos trechos recuperados do acervo RAG:
+     * Você PODE E DEVE utilizar seu conhecimento e capacidade de pesquisa de IA para responder à dúvida do aluno de forma clara, precisa e didática.
+     * Ao final da mensagem, obrigatoriamente informe a origem adicionando a linha exata:
+       🌐 Fontes diversas da internet
+
+3. RESPOSTA EMBASADA NO ACERVO DA TURMA:
+   - Se a resposta foi fundamentada e retirada dos materiais recuperados do acervo RAG da turma enviados pelo professor:
+     * Ao final da mensagem, obrigatoriamente informe a origem adicionando a linha exata:
+       📚 Informação retirada do acervo de fontes da turma
+
+4. ASSUNTOS FORA DO SUMÁRIO DA TURMA (OFF-TOPIC):
+   - Se a pergunta do aluno NÃO tiver qualquer relação com a disciplina ou com o sumário da turma (ex: futebol, receitas culinárias, piadas, curiosidades externas ou programação em turmas de outras áreas):
+     * NÃO pesquise nem responda sobre o assunto externo.
+     * Responda de forma empática, cortês e educada, explicando gentilmente o escopo da turma e convidando o aluno a fazer perguntas relacionadas aos materiais da disciplina.
+     * (NÃO inclua selos de fonte para saudações informais ou recusas educadas de temas off-topic).
+
+5. 🚫 PROIBIÇÃO ABSOLUTA DE VAZAMENTO DE PROGRAMAÇÃO OU OUTRAS DISCIPLINAS:
+   - NUNCA mencione "programação", "C++", "algoritmos" ou "código" em turmas de outras matérias (ex: História, Biologia, Direito, Literatura, Filosofia), A MENOS QUE esta turma seja especificamente de programação.
+
+6. FORMATO OBRIGATÓRIO DO SELO DE FONTE AO FINAL DA MENSAGEM:
+   - Toda resposta explicativa/educacional DEVE terminar em uma nova linha separada ao final da mensagem com APENAS UMA destas duas frases exatas:
+     📚 Informação retirada do acervo de fontes da turma
+     OU
+     🌐 Fontes diversas da internet
+"""
+
+    if subject_type == "custom" and custom_guidelines:
+        augmented_system_prompt = f"""{BASE_RAG_KNOWLEDGE_PROMPT}
+
+=== 📘 DIRETRIZES COMPORTAMENTAIS E PEDAGÓGICAS DA TURMA (DEFINIDAS PELO PROFESSOR) ===
+As instruções a seguir foram estabelecidas pelo professor para orientar EXCLUSIVAMENTE o seu tom de voz, estilo de comunicação, postura pedagógica e formato de interação (ex: método socrático, tom encorajador, formato de perguntas):
+{custom_guidelines}
+
+(IMPORTANTE: As diretrizes comportamentais acima orientam A FORMA, O TOM E O MODO como você se comunica. O CONTEÚDO e O ESCOPO das suas respostas permanecem regidos pelas regras do acervo/sumário da turma definidos no bloco de regras superiores).
+"""
+    else:
+        augmented_system_prompt = f"""{BASE_RAG_KNOWLEDGE_PROMPT}
+
+{SYSTEM_PROMPT}
+"""
+
+    if subject_type == "programming":
+        if user_submitted_code:
+            augmented_system_prompt += (
+                "\n\n=== AVALIAÇÃO DE CÓDIGO DO ALUNO (MODO PBL INTERATIVO) ===\n"
+                "O aluno enviou uma tentativa de código para o passo atual. Avalie a lógica e a sintaxe dele.\n"
+                "1. SE O CÓDIGO TIVER ERROS: Explique os erros de forma totalmente conceitual e lógica em texto. REGRA CRÍTICA ABSOLUTA: É PROIBIDO GERAR QUALQUER BLOCO DE CÓDIGO OU CÓDIGO DE CORREÇÃO NA SUA RESPOSTA.\n"
+                "2. SE O CÓDIGO ESTIVER CORRETO: Valide a etapa e peça para o aluno construir a PRÓXIMA ETAPA em cima do código que ele próprio escreveu."
+            )
+        elif intent == "GREETING":
+            augmented_system_prompt += (
+                "\n\n=== ORIENTAÇÃO DE SAUDAÇÃO ===\n"
+                "O aluno enviou uma saudação ou conversa informal inicial.\n"
+                f"Responda de forma breve, cortês e acolhedora, apresentando-se como IARA, a tutora virtual de programação da turma '{class_name if class_name else 'IARA'}', e perguntando em que pode ajudar nos estudos hoje."
+            )
+        elif intent == "CONCEPTUAL_QUESTION":
+            augmented_system_prompt += (
+                "\n\n=== DÚVIDA CONCEITUAL DE PROGRAMAÇÃO ===\n"
+                "O aluno fez uma dúvida conceitual isolada sobre a matéria. Responda diretamente explicando o conceito com clareza pedagógica.\n"
+                "Se a resposta for baseada no acervo RAG fornecido abaixo, adicione ao final: 📚 Informação retirada do acervo de fontes da turma\n"
+                "Se for um conceito geral da disciplina expandido via IA, adicione ao final: 🌐 Fontes diversas da internet"
+            )
+        else:
+            # EXERCÍCIO / DESAFIO DE PROGRAMAÇÃO (MODO PBL PASSO A PASSO OBRIGATÓRIO)
+            augmented_system_prompt += (
+                "\n\n=== MODO EXERCÍCIO DIDÁTICO (PBL PASSO A PASSO OBRIGATÓRIO) ===\n"
+                "O aluno enviou um problema/exercício de programação ou solicitou a criação de um programa.\n"
+                "Siga RIGOROSAMENTE o formato PBL interativo do SYSTEM_PROMPT e os FEW_SHOT_PBL_EXAMPLES:\n\n"
+                "1. REGRA ABSOLUTA DE TRAVA DE CÓDIGO (CODE BRAKE):\n"
+                "   - JAMAIS forneça o código completo da questão nem resolva o exercício para o aluno!\n"
+                "   - Monte apenas a Etapa 1 por vez.\n\n"
+                "2. ESTRUTURA DA MENSAGEM (OBRIGATÓRIA):\n"
+                "   Desafio: [Breve resumo do enunciado]\n\n"
+                "   ---\n"
+                "   ### 📢 Etapa 1: [Nome da Etapa 1]\n\n"
+                "   **Justificativa da Escolha Conceitual:**\n"
+                "   [Explique em tópicos por que cada estrutura simples foi escolhida]\n\n"
+                "   **Onde Implementar no Código:**\n"
+                "   [Explique em qual parte do arquivo o código fica]\n\n"
+                "   **Código Genérico (Template Sintático 100% Abstrato e Simples):**\n"
+                "   ```cpp\n"
+                "   // Use APENAS placeholders genéricos 100% abstratos como NOME_CONSTANTE, tipoVar, nomeVetor, sua_condicao.\n"
+                "   // NUNCA COLOQUE VARIÁVEIS, NÚMEROS OU SOLUÇÃO DO ENUNCIADO DO ALUNO NO TEMPLATE!\n"
+                "   ```\n\n"
+                "   **Instrução:**\n"
+                "   [Peça para o aluno escrever o código da Etapa 1 e enviar no chat para você avaliar]\n"
+            )
+    else:
+        # Turmas Customizadas (Não-Programação)
         if intent == "GREETING":
             augmented_system_prompt += (
                 "\n\n=== ORIENTAÇÃO DE SAUDAÇÃO ===\n"
                 "O aluno enviou uma saudação ou conversa informal inicial.\n"
-                "Responda de forma breve, cortês e acolhedora, apresentando-se como IARA, a tutora virtual de programação do curso, e perguntando em que pode ajudar nos estudos hoje."
+                f"Responda de forma breve, cortês e acolhedora, apresentando-se como IARA, a tutora virtual da turma '{class_name if class_name else 'IARA'}', e perguntando em que pode ajudar nos estudos hoje."
+            )
+        elif not all_retrieved:
+            augmented_system_prompt += (
+                "\n\n=== ORIENTAÇÃO DE RESPOSTA (SEM CONTEXTO RAG DIRETO) ===\n"
+                "Nenhum documento do acervo RAG foi retornado diretamente para esta consulta específica nesta turma.\n"
+                "Siga rigorosamente estas instruções:\n"
+                f"1. SE A PERGUNTA TIVER RELAÇÃO COM O SUMÁRIO DA TURMA ('{rag_summary}'): "
+                "responda à dúvida do aluno de forma didática e completa utilizando seu conhecimento de IA/internet, e finalize obrigatoriamente a mensagem com a linha exata:\n"
+                "🌐 Fontes diversas da internet\n\n"
+                "2. SE FOR UM ASSUNTO TOTALMENTE FORA DO SUMÁRIO DA TURMA (off-topic, ex: esportes, receitas, política, piadas ou programação fora da turma de computação): "
+                "reconheça o comentário do aluno de forma amigável e empática. Explique com gentileza que seu foco é exclusivo nos conteúdos e materiais desta turma e convide-o a fazer uma pergunta sobre a matéria. (Não adicione selo de fonte)."
             )
         else:
             augmented_system_prompt += (
-                "\n\n=== ORIENTAÇÃO DE RESPOSTA (SEM CONTEXTO RAG) ===\n"
-                "Nenhum documento do acervo RAG foi retornado diretamente para esta consulta.\n"
-                "Siga rigorosamente estas instruções:\n"
-                "1. SE FOR UM ASSUNTO FORA DO CURSO (off-topic, ex: esportes, Flamengo, receitas, culinária, política, piadas, entretenimento, curiosidades geral): "
-                "reconheça o comentário do aluno de forma amigável, educada e empática. Explique com gentileza que seu foco como tutora virtual é exclusivo nos conteúdos e materiais de programação do nosso curso (disponibilizados pelo professor no acervo RAG), e convide-o a fazer uma pergunta sobre a matéria de programação.\n"
-                "2. SE FOR UMA DÚVIDA DE PROGRAMAÇÃO SOBRE TÓPICO NÃO CADASTRADO NO ACERVO: "
-                "explique de forma educada que este tópico específico não faz parte do acervo atual do curso disponibilizado pelo professor e convide-o a tirar dúvidas sobre os temas cobertos."
+                "\n\n=== MODO DÚVIDA / CONSULTA DA DISCIPLINA ===\n"
+                "1. Se os trechos do acervo RAG fornecidos abaixo responderem à dúvida: utilize-os e finalize a mensagem com a linha exata:\n"
+                "📚 Informação retirada do acervo de fontes da turma\n"
+                "2. Se a dúvida tiver relação com o sumário da turma mas os trechos recuperados não contiverem a resposta completa: use seu conhecimento de IA para responder e finalize a mensagem com a linha exata:\n"
+                "🌐 Fontes diversas da internet"
             )
-    elif intent == "GREETING":
-        augmented_system_prompt += (
-            "\n\n=== ORIENTAÇÃO DE SAUDAÇÃO ===\n"
-            "O aluno enviou uma saudação ou apresentação.\n"
-            "Responda de forma breve, acolhedora e educada, apresentando-se como IARA, a tutora virtual de programação do curso, e perguntando como pode ajudá-lo com os estudos hoje."
-        )
-    elif intent == "CONCEPTUAL_QUESTION" and not user_submitted_code:
-        augmented_system_prompt += (
-            "\n\n=== MODO DÚVIDA PONTUAL / CONCEITUAL ===\n"
-            "O aluno está fazendo uma dúvida pontual sobre um tópico coberto no acervo RAG. "
-            "Responda DIRETAMENTE com clareza conceitual e objetividade humana. "
-            "Embase sua resposta nos livros e materiais do acervo RAG fornecidos abaixo. "
-            "Se necessário para aprofundar ou esclarecer a dúvida, use seu conhecimento de IA para gerar uma explicação bem fundamentada SOBRE O TÓPICO QUE O DOCUMENTO JÁ COBRE."
-        )
-    elif intent == "GENERAL_QUERY" and not user_submitted_code:
-        augmented_system_prompt += (
-            "\n\n=== MODO PERGUNTA GERAL ===\n"
-            "Analise a intenção do aluno:\n"
-            "1. Se ele estiver fazendo uma dúvida conceitual ou de sintaxe em programação (mesmo com erros de digitação como 'fzr', 'vetors', 'algoritimo'): responda diretamente explicando o conceito com clareza com base nos materiais do RAG abaixo.\n"
-            "2. Se ele estiver perguntando sobre um assunto fora da matéria (ex: receitas de bolo, esportes, curiosidades) e os trechos do RAG forem apenas analogias didáticas do livro (ex: comparar algoritmos a receitas): "
-            "responda de forma amigável e empática reconhecendo o comentário dele, mas esclareça educadamente que o livro do curso usa esse tema apenas como analogia didática e que seu papel é focado no ensino de programação, convidando-o a estudar um tópico da matéria.\n"
-            "3. Se ele estiver pedindo para aprender um novo exercício de programação: inicie o método PBL passo a passo (Etapa 1)."
-        )
-    elif user_submitted_code:
-        augmented_system_prompt += (
-            "\n\n=== AVALIAÇÃO DE CÓDIGO DO ALUNO (MODO PBL) ===\n"
-            "O aluno enviou uma tentativa de código para o passo atual. Avalie a lógica e a sintaxe dele.\n"
-            "1. SE O CÓDIGO TIVER ERROS: Explique os erros de forma totalmente conceitual e lógica em texto. REGRA CRÍTICA: NÃO GERAR NENHUM CÓDIGO DE CORREÇÃO.\n"
-            "2. SE O CÓDIGO ESTIVER CORRETO: Valide o passo e peça para ele fazer o PRÓXIMO PASSO."
-        )
-    else:
-        augmented_system_prompt += (
-            "\n\n=== MODO EXERCÍCIO DIDÁTICO (PBL PASSO A PASSO) ===\n"
-            "Inicie ou dê continuidade ao desafio de programação seguindo o método PBL passo a passo (Etapa 1, justificativa conceitual, explicação lógica, onde implementar, template 100% abstrato e instrução)."
-        )
 
     if rag_context:
-        augmented_system_prompt += f"\n\n=== BASE CONCEITUAL E LIVROS DO PROFESSOR (RAG) ===\n{rag_context}"
+        augmented_system_prompt += f"\n\n=== BASE CONCEITUAL E MATERIAIS DA TURMA (RAG) ===\n{rag_context}"
 
     recent_history = [m for m in messages if m.get("role") != "system"][-15:]
     if not recent_history or recent_history[-1].get("content") != user_message:
@@ -736,17 +915,19 @@ def generate_chat_response(messages: List[Dict[str, str]], user_message: str) ->
         response = client.chat.completions.create(
             model=OPENAI_MODEL,
             messages=final_messages,
-            temperature=0.4 if (intent in ["CONCEPTUAL_QUESTION", "GREETING", "GENERAL_QUERY"] or not all_retrieved) else 0.3,
+            temperature=0.4 if (intent in ["CONCEPTUAL_QUESTION", "GREETING", "GENERAL_QUERY"] or not all_retrieved or subject_type != "programming") else 0.3,
             max_tokens=1000
         )
         reply_content = response.choices[0].message.content.strip()
 
-        if user_submitted_code and ("erro" in reply_content.lower() or "incorreto" in reply_content.lower() or "ajustar" in reply_content.lower()):
-            reply_content = strip_code_blocks(reply_content)
-        elif all_retrieved:
-            from services.code_guardrail_service import apply_code_brake, sanitize_specific_domain_logic
-            reply_content = apply_code_brake(reply_content, all_retrieved, new_citations)
-            reply_content = sanitize_specific_domain_logic(reply_content)
+        if subject_type == "programming":
+            if user_submitted_code and ("erro" in reply_content.lower() or "incorreto" in reply_content.lower() or "ajustar" in reply_content.lower()):
+                reply_content = strip_code_blocks(reply_content)
+            elif all_retrieved:
+                from services.code_guardrail_service import apply_code_brake, sanitize_specific_domain_logic
+                reply_content = apply_code_brake(reply_content, all_retrieved, new_citations)
+                reply_content = sanitize_specific_domain_logic(reply_content)
+
         return reply_content
     except Exception as e:
         logger.error(f"Erro ao chamar OpenAI: {e}")

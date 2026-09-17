@@ -45,9 +45,14 @@ document.getElementById("login-form").addEventListener("submit", async function(
     localStorage.setItem("iara_user_email", data.email);
     localStorage.setItem("iara_user_name", data.name);
     localStorage.setItem("iara_user_role", data.role || "aluno");
+    localStorage.setItem("user", JSON.stringify({ email: data.email, name: data.name, role: data.role || "aluno" }));
 
     showCustomAlert("Sucesso", "Login efetuado com sucesso!", () => {
-        window.location.replace("index.html");
+        if (data.role === 'professor' || data.role === 'admin') {
+            window.location.replace("selecionar_turma.html");
+        } else {
+            window.location.replace("index.html");
+        }
     });
   } catch (err) {
       showCustomAlert("Erro de Conexão", "Falha ao conectar com o banco de dados.");
