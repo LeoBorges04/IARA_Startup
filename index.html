@@ -5,6 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IARA - Inteligência Artificial de Raciocínio Algorítmico</title>
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./style.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
 </head>
@@ -14,57 +18,139 @@
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-brand">
-                <img src="./assets/logoChat.png" class="robot-logo" alt="IARA Logo">
-                <h2>IARA</h2>
+                <div class="brand-avatar-circle">
+                    <img src="assets/NewIaraLogo.png" alt="IARA Logo" class="brand-logo-img" />
+                </div>
             </div>
 
             <div class="sidebar-scrollable-content">
-                <button id="new-chat-btn" class="new-chat-btn">
+                <button id="new-chat-btn" class="btn-gradient new-chat-btn">
                     <span>+</span> Novo Chat
                 </button>
 
+                <div class="sidebar-section-header">
+                    <span class="sidebar-section-title">Recentes</span>
+                </div>
+
                 <div class="chat-history" id="chat-history-list">
-                    <!-- Chat items injected here -->
+                    <!-- Chat items dynamically injected here -->
                 </div>
             </div>
 
             <div class="sidebar-footer">
-                <div class="user-info">
+                <div class="user-info-card" id="user-profile-card">
                     <div class="avatar" id="user-avatar-initial">U</div>
-                    <div class="email" id="user-email-display">user@email.com</div>
+                    <div class="user-details">
+                        <span class="name" id="user-name-display">Usuário</span>
+                        <span class="email" id="user-email-display">user@email.com</span>
+                    </div>
+                    <button class="settings-btn" id="open-settings-btn" title="Configurações">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#787486" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                        </svg>
+                    </button>
                 </div>
                 <button id="logout-btn" class="logout-btn-small">Sair da Conta</button>
             </div>
         </aside>
 
-        <!-- Main Content -->
+        <!-- Main Content Area -->
         <main class="main-content">
-            <button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
-
+            <header class="top-header">
+                <button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
+                <div class="top-header-title">
+                    <span class="header-logo-text">IARA</span>
+                </div>
+                <div class="top-header-right">
+                    <a href="admin.html" id="admin-rag-btn" class="header-icon-btn" title="Painel de Administração / Materiais RAG" style="display: none;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                        </svg>
+                    </a>
+                </div>
+            </header>
             <div class="chat-wrapper">
-                <div id="chat"></div>
+                <div id="chat">
+                    <!-- Dynamic chat messages or Welcome Hero state injected here -->
+                </div>
 
                 <div id="input-area">
                     <textarea id="message" rows="1"
                         placeholder="Cole o código ou digite a Mensagem... (Shift+Enter para pular linha)"></textarea>
-                    <button id="send-btn">➤</button>
-                    <button id="cancel-btn" style="display: none; align-items: center; justify-content: center; background: linear-gradient(135deg, #ff5c8a 0%, #ff8fb0 100%); color: white; border: none; border-radius: 50%; width: 54px; height: 54px; font-size: 1.2rem; cursor: pointer; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); box-shadow: 0 4px 15px rgba(255, 92, 138, 0.3);">⏹</button>
+                    <button id="send-btn" class="send-btn-circle">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+                    <button id="cancel-btn" style="display: none;" class="cancel-btn-circle">⏹</button>
                 </div>
             </div>
         </main>
     </div>
 
     <!-- Modals -->
-    <div class="modal-overlay" id="greeting-modal" style="display: none;">
-        <div class="modal-container">
-            <h3 class="modal-title">Bem-vindo(a)!</h3>
-            <p class="modal-text" id="greeting-message"></p>
-            <div class="modal-actions">
-                <button class="modal-btn confirm-btn" id="greeting-close-btn">Fechar</button>
-            </div>
+    <!-- Configurações Modal (Node 156-43) -->
+    <div class="modal-overlay" id="settings-modal" style="display: none;">
+        <div class="modal-container settings-modal-container">
+            <h3 class="modal-title highlight-pink">Configuração</h3>
+            
+            <form id="settings-form">
+                <div class="form-group">
+                    <label for="settings-name">Nome Completo</label>
+                    <div class="input-icon-wrapper">
+                        <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF5C8A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                        <input type="text" id="settings-name" placeholder="Inserir nome" required />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="settings-email">E-mail</label>
+                    <div class="input-icon-wrapper">
+                        <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF5C8A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                            <polyline points="22,6 12,13 2,6"></polyline>
+                        </svg>
+                        <input type="email" id="settings-email" placeholder="Inserir e-mail" required />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="settings-password">Senha</label>
+                    <div class="input-icon-wrapper">
+                        <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF5C8A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
+                        <input type="password" id="settings-password" placeholder="Inserir senha" />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="settings-confirm-password">Confirmar Senha</label>
+                    <div class="input-icon-wrapper">
+                        <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF5C8A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
+                        <input type="password" id="settings-confirm-password" placeholder="Confirmar senha" />
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="modal-btn cancel-btn" id="settings-cancel-btn">Cancelar</button>
+                    <button type="submit" class="btn-gradient" id="settings-save-btn">Atualizar</button>
+                </div>
+            </form>
         </div>
     </div>
 
+    <!-- Rename Modal -->
     <div class="modal-overlay" id="rename-modal" style="display: none;">
         <div class="modal-container">
             <h3 class="modal-title">Renomear Conversa</h3>
@@ -78,6 +164,7 @@
         </div>
     </div>
 
+    <!-- Delete Modal -->
     <div class="modal-overlay" id="delete-modal" style="display: none;">
         <div class="modal-container">
             <h3 class="modal-title">Excluir Conversa</h3>
@@ -85,6 +172,17 @@
             <div class="modal-actions">
                 <button class="modal-btn cancel-btn" id="delete-cancel-btn">Cancelar</button>
                 <button class="modal-btn danger-btn" id="delete-confirm-btn">Excluir</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Alert Modal -->
+    <div id="custom-alert" class="modal-overlay" style="display: none;">
+        <div class="modal-container">
+            <h3 class="modal-title" id="alert-title">Aviso</h3>
+            <p class="modal-text" id="alert-message"></p>
+            <div class="modal-actions">
+                <button class="modal-btn confirm-btn" id="alert-ok-btn">OK</button>
             </div>
         </div>
     </div>

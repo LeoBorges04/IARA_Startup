@@ -96,11 +96,15 @@ document.getElementById("register-form").addEventListener("submit", async functi
   }
 
 
+  // Read optional role parameter from URL (from pre_cadastro page)
+  const urlParams = new URLSearchParams(window.location.search);
+  const role = urlParams.get("role") || "aluno";
+
   try {
     const response = await fetch("http://localhost:3000/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password })
+        body: JSON.stringify({ name, email, password, role })
     });
     const data = await response.json();
 
@@ -113,7 +117,7 @@ document.getElementById("register-form").addEventListener("submit", async functi
     localStorage.setItem("iara_logged_in", "true");
     localStorage.setItem("iara_user_email", data.user.email);
     localStorage.setItem("iara_user_name", data.user.name);
-    localStorage.setItem("iara_user_role", data.user.role);
+    localStorage.setItem("iara_user_role", data.user.role || role);
 
     showCustomAlert("Sucesso", data.message || "Cadastro realizado com sucesso!", () => {
         window.location.replace("index.html");
@@ -122,3 +126,4 @@ document.getElementById("register-form").addEventListener("submit", async functi
       showCustomAlert("Erro de Conexão", "Falha ao se conectar com o servidor da base de dados.");
   }
 });
+

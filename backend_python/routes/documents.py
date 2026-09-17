@@ -3,6 +3,7 @@ import os
 import shutil
 import tempfile
 from database import document_chunks_collection, exercise_catalog_collection, concept_base_collection
+from services.rag_service import ingest_document
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 

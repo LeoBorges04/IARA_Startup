@@ -27,7 +27,7 @@ def register_user(user_data: UserRegister):
         "name": user_data.name,
         "email": user_data.email,
         "password": hashed,
-        "role": "user"
+        "role": user_data.role if user_data.role else "aluno"
     }
     
     users_collection.insert_one(user_doc)

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IARA — Project Model Canvas</title>
+    <link rel="icon" type="image/png" href="assets/favicon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -48,6 +49,7 @@
             border-radius: 16px;
             border: 1px solid #4338ca;
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+            zoom: 1.2;
         }
 
         .header-title h1 {
@@ -89,6 +91,7 @@
             grid-template-rows: auto auto auto;
             gap: 16px;
             flex-grow: 1;
+            zoom: 1.2;
         }
 
         .canvas-card {
@@ -210,6 +213,12 @@
             .block-entregas, .block-riscos, .block-timeline, .block-custos {
                 grid-column: auto;
                 grid-row: auto;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .canvas-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>

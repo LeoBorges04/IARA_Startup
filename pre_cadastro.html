@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>IARA - Escolha seu Perfil</title>
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="auth-body-split">
+  
+  <div class="auth-split-layout">
+    <!-- Left Illustration Side -->
+    <div class="auth-left-side">
+      <div class="auth-brand-header">
+        <div class="brand-logo-icon">
+          <img src="assets/NewIaraLogo.png" alt="IARA Logo" class="brand-logo-img" />
+        </div>
+        <div class="brand-text">
+          <h1>IARA</h1>
+          <p style="font-size: 24px">Inteligência Artificial para o Raciocínio Algorítmico</p>
+        </div>
+      </div>
+
+      <div class="auth-illustration-container">
+        <img src="assets/IARAmulher.png" alt="IARA Ilustração" class="auth-illustration-img" />
+      </div>
+    </div>
+
+    <!-- Right Form Side -->
+    <div class="auth-right-side">
+      <div class="auth-card">
+        <h2 class="auth-title">Quem vai usar a <span class="highlight-pink">IARA</span>?</h2>
+        <p class="auth-subtitle">Escolha o perfil para criar sua conta e personalizar a experiência.</p>
+
+        <div class="role-options">
+          <div class="role-card" id="role-student" onclick="selectRole('aluno')">
+            <div class="role-icon">
+              <!-- Graduation Cap SVG -->
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FF5C8A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+                <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+              </svg>
+            </div>
+            <div class="role-info">
+              <h3>Aluno</h3>
+              <p>Aprender programação, tirar dúvidas e praticar exercícios.</p>
+            </div>
+          </div>
+
+          <div class="role-card" id="role-teacher" onclick="selectRole('professor')">
+            <div class="role-icon">
+              <!-- Book SVG -->
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#A855F7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+              </svg>
+            </div>
+            <div class="role-info">
+              <h3>Professor</h3>
+              <p>Criar turmas, acompanhar alunos e acessar relatórios.</p>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn-secondary-dark" onclick="window.location.href='login.html'">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+          Voltar para a tela inicial
+        </button>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function selectRole(role) {
+      window.location.href = `register.html?role=${role}`;
+    }
+  </script>
+</body>
+</html>

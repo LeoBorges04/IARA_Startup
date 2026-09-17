@@ -7,8 +7,8 @@ if (localStorage.getItem("iara_logged_in") !== "true") {
 
 // ===== CONSTANTES =====
 const API_URL = "http://localhost:3000/api";
-const currentUserEmail = localStorage.getItem("iara_user_email") || "admin@admin.com";
-const currentUserName = localStorage.getItem("iara_user_name") || "Usuário";
+let currentUserEmail = localStorage.getItem("iara_user_email") || "user@email.com";
+let currentUserName = localStorage.getItem("iara_user_name") || "Usuário";
 
 // ===== ELEMENTOS DOM =====
 const chatDiv = document.getElementById('chat');
@@ -22,6 +22,7 @@ const sidebar = document.getElementById('sidebar');
 const appLayout = document.getElementById('app-layout');
 const logoutBtn = document.getElementById("logout-btn");
 const userEmailDisplay = document.getElementById("user-email-display");
+const userNameDisplay = document.getElementById("user-name-display");
 const userAvatarInitial = document.getElementById("user-avatar-initial");
 
 // Modals
@@ -33,6 +34,37 @@ const deleteModal = document.getElementById('delete-modal');
 const deleteCancelBtn = document.getElementById('delete-cancel-btn');
 const deleteConfirmBtn = document.getElementById('delete-confirm-btn');
 
+// Settings Modal Elements (Node 156-43)
+const settingsModal = document.getElementById('settings-modal');
+const openSettingsBtn = document.getElementById('open-settings-btn');
+const settingsForm = document.getElementById('settings-form');
+const settingsNameInput = document.getElementById('settings-name');
+const settingsEmailInput = document.getElementById('settings-email');
+const settingsPasswordInput = document.getElementById('settings-password');
+const settingsConfirmPasswordInput = document.getElementById('settings-confirm-password');
+const settingsCancelBtn = document.getElementById('settings-cancel-btn');
+
+// Alert Modal
+function showCustomAlert(title, message, callback) {
+  const alertModal = document.getElementById("custom-alert");
+  const alertTitle = document.getElementById("alert-title");
+  const alertMessage = document.getElementById("alert-message");
+  const alertOkBtn = document.getElementById("alert-ok-btn");
+
+  if (alertModal && alertTitle && alertMessage && alertOkBtn) {
+    alertTitle.textContent = title;
+    alertMessage.textContent = message;
+    alertModal.style.display = "flex";
+
+    const handleOk = () => {
+      alertModal.style.display = "none";
+      alertOkBtn.removeEventListener("click", handleOk);
+      if (callback) callback();
+    };
+    alertOkBtn.addEventListener("click", handleOk);
+  }
+}
+
 // ===== ESTADO GLOBAL DA APLICAÇÃO =====
 let chats = [];
 let currentChatId = null;
@@ -43,28 +75,26 @@ let generatingChatId = null;
 let unreadChatIds = new Set();
 let currentAbortController = null;
 
-// Display user info in sidebar
-userEmailDisplay.textContent = currentUserName;
-userAvatarInitial.textContent = currentUserName.charAt(0).toUpperCase();
+// Display user info in sidebar & check role for admin RAG button
+function updateProfileDisplay() {
+  currentUserEmail = localStorage.getItem("iara_user_email") || "user@email.com";
+  currentUserName = localStorage.getItem("iara_user_name") || "Usuário";
+  const userRole = localStorage.getItem("iara_user_role") || "aluno";
 
-// Saudaçao personalizada no modal (RF12)
-const greetingModal = document.getElementById("greeting-modal");
-const greetingMessageElement = document.getElementById("greeting-message");
-const greetingCloseBtn = document.getElementById("greeting-close-btn");
+  if (userEmailDisplay) userEmailDisplay.textContent = currentUserEmail;
+  if (userNameDisplay) userNameDisplay.textContent = currentUserName;
+  if (userAvatarInitial) userAvatarInitial.textContent = currentUserName.charAt(0).toUpperCase();
 
-if (greetingModal && greetingMessageElement && greetingCloseBtn) {
-  greetingMessageElement.textContent = `Olá, ${currentUserName.split(' ')[0]}! Bem-vindo(a) ao IARA. Como posso te auxiliar hoje?`;
-  greetingModal.style.display = "flex";
-
-  let timeoutId = setTimeout(() => {
-    greetingModal.style.display = "none";
-  }, 5000);
-
-  greetingCloseBtn.addEventListener("click", () => {
-    clearTimeout(timeoutId);
-    greetingModal.style.display = "none";
-  });
+  const adminRagBtn = document.getElementById("admin-rag-btn");
+  if (adminRagBtn) {
+    if (userRole === "professor" || userRole === "admin") {
+      adminRagBtn.style.display = "flex";
+    } else {
+      adminRagBtn.style.display = "none";
+    }
+  }
 }
+updateProfileDisplay();
 
 // ===== INICIALIZAÇÃO =====
 async function init() {
@@ -80,7 +110,6 @@ async function init() {
   if (chats.length === 0) {
     showEmptyState();
   } else {
-    // Sort por recência
     chats.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
     selectChat(chats[0]._id);
   }
@@ -103,7 +132,6 @@ async function createNewChat() {
       const dbChat = await response.json();
       chats.unshift(dbChat);
 
-      // Disparar transição em fases (RF: Garantir renderSidebar apenas após animação)
       if (sidebar.classList.contains('empty-sidebar')) {
         initiateLogoAnimation();
         completeInterfaceTransition(dbChat._id);
@@ -118,25 +146,21 @@ async function createNewChat() {
   }
 }
 
-// === GESTÃO DE TRANSIÇÕES (FASES) ===
 function initiateLogoAnimation() {
   sidebar.classList.remove('empty-sidebar');
 }
 
 function completeInterfaceTransition(id) {
-  // Ocultar área de input inicialmente se estiver vindo do estado vazio
   document.getElementById('input-area').style.display = 'none';
 
   setTimeout(() => {
     sidebar.classList.remove('sidebar-hide-content');
-    newChatBtn.classList.remove('hidden');
-    chatHistoryList.classList.remove('hidden');
+    if (newChatBtn) newChatBtn.classList.remove('hidden');
+    if (chatHistoryList) chatHistoryList.classList.remove('hidden');
     document.getElementById('input-area').style.display = 'flex';
 
-    // Renderizar a lista de chats apenas agora (conforme solicitado pelo usuário)
     renderSidebar();
     if (id) {
-      // Selecionar o chat mas evitar que o selectChat dispare nova animação
       const chat = chats.find(c => c._id === id);
       if (chat) {
         currentChatId = id;
@@ -148,7 +172,7 @@ function completeInterfaceTransition(id) {
         messageInput.focus();
       }
     }
-  }, 500); // 1.5s para garantir que a transição da logo (0.8s) terminou
+  }, 300);
 }
 
 function selectChat(id) {
@@ -159,17 +183,15 @@ function selectChat(id) {
   const chat = chats.find(c => c._id === id);
   if (!chat) return;
 
-  // Se estiver vindo do estado vazio (ex: clique no botão inicial sem criar via createNewChat)
   if (sidebar.classList.contains('empty-sidebar')) {
     initiateLogoAnimation();
     completeInterfaceTransition(id);
-    return; // O conteúdo será renderizado dentro do timeout
+    return;
   }
 
-  // Comportamento normal para troca de chats já existentes
   document.getElementById('input-area').style.display = 'flex';
-  newChatBtn.classList.remove('hidden');
-  chatHistoryList.classList.remove('hidden');
+  if (newChatBtn) newChatBtn.classList.remove('hidden');
+  if (chatHistoryList) chatHistoryList.classList.remove('hidden');
   sidebar.classList.remove('sidebar-hide-content');
 
   chatDiv.innerHTML = '';
@@ -188,17 +210,16 @@ function selectChat(id) {
   messageInput.focus();
 }
 
-
 // ===== INTERFACE (SIDEBAR) =====
 function renderSidebar() {
+  if (!chatHistoryList) return;
   chatHistoryList.innerHTML = '';
 
-  // Ocultar/Mostrar elementos da barra lateral baseado na existência de chats
   if (chats.length === 0) {
-    newChatBtn.classList.add('hidden');
+    if (newChatBtn) newChatBtn.classList.add('hidden');
     chatHistoryList.classList.add('hidden');
   } else {
-    newChatBtn.classList.remove('hidden');
+    if (newChatBtn) newChatBtn.classList.remove('hidden');
     chatHistoryList.classList.remove('hidden');
   }
 
@@ -212,7 +233,7 @@ function renderSidebar() {
     const titleSpan = document.createElement('span');
     titleSpan.classList.add('history-item-title');
     titleSpan.textContent = chat.title;
-    titleSpan.onclick = (e) => {
+    titleSpan.onclick = () => {
       selectChat(chat._id);
     };
 
@@ -222,17 +243,13 @@ function renderSidebar() {
       indicator.classList.add('generating-indicator');
       indicator.title = "Gerando resposta...";
       indicator.innerHTML = '<span class="generating-dot"></span><span class="generating-text">Gerando</span>';
-      indicator.onclick = (e) => {
-        selectChat(chat._id);
-      };
+      indicator.onclick = () => selectChat(chat._id);
     } else if (unreadChatIds.has(chat._id)) {
       indicator = document.createElement('div');
       indicator.classList.add('generating-indicator', 'unread');
       indicator.title = "Nova resposta pronta!";
       indicator.innerHTML = '<span class="generating-dot"></span><span class="generating-text">Nova</span>';
-      indicator.onclick = (e) => {
-        selectChat(chat._id);
-      };
+      indicator.onclick = () => selectChat(chat._id);
     }
 
     const actionsDiv = document.createElement('div');
@@ -260,9 +277,7 @@ function renderSidebar() {
     actionsDiv.appendChild(deleteBtn);
 
     btn.appendChild(titleSpan);
-    if (indicator) {
-      btn.appendChild(indicator);
-    }
+    if (indicator) btn.appendChild(indicator);
     btn.appendChild(actionsDiv);
 
     chatHistoryList.appendChild(btn);
@@ -338,70 +353,118 @@ function closeDeleteModal() {
   chatToDeleteId = null;
 }
 
+// Welcome State / Tela Inicial (Node 156-42)
 function showEmptyState() {
   renderSidebar();
   chatDiv.innerHTML = `
-    <div class="empty-state-container">
-      <img src="./assets/logoChat.png" class="empty-state-icon" alt="IARA Logo">
-      <h2 class="empty-state-title">Bem-vindo ao IARA</h2>
-      <p class="empty-state-text">Sua tutora virtual de programação. Comece uma nova conversa para tirar suas dúvidas ou praticar exercícios.</p>
-      <button id="start-conversation-btn" class="start-chat-btn">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <div class="welcome-hero-container">
+      <div class="welcome-hero-avatar">
+        <img src="assets/NewIaraLogo.png" alt="IARA Logo" class="welcome-hero-logo-img" />
+      </div>
+      <h2 class="welcome-hero-title">Bem-vindo a <span class="highlight-pink">IARA</span></h2>
+      <p class="welcome-hero-subtitle">Sua tutora virtual de programação. Comece uma nova conversa para tirar duvidas ou praticar exercícios.</p>
+      <button id="start-conversation-btn" class="btn-gradient welcome-hero-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <line x1="12" y1="5" x2="12" y2="19"></line>
           <line x1="5" y1="12" x2="19" y2="12"></line>
         </svg>
-        Iniciar Conversa
+         Iniciar conversa
       </button>
     </div>
   `;
 
-  // Ocultar área de input
   document.getElementById('input-area').style.display = 'none';
-
-  // Ocultar botão de novo chat na sidebar
-  newChatBtn.classList.add('hidden');
-
-  // Ativar estados de "vazio" (logo centralizada) e "oculto" (conteúdo Invisível)
+  if (newChatBtn) newChatBtn.classList.add('hidden');
   sidebar.classList.add('empty-sidebar');
   sidebar.classList.add('sidebar-hide-content');
 
-  // Adicionar evento ao botão
   const startBtn = document.getElementById('start-conversation-btn');
   if (startBtn) {
     startBtn.onclick = () => createNewChat();
   }
 }
 
-// ===== EVENTOS =====
-mobileMenuBtn.addEventListener('click', () => {
-  sidebar.classList.toggle('open');
-  appLayout.classList.toggle('sidebar-open');
-});
+// ===== CONFIGURAÇÕES MODAL LOGIC (Node 156-43) =====
+function openSettingsModal() {
+  if (settingsNameInput) settingsNameInput.value = currentUserName;
+  if (settingsEmailInput) settingsEmailInput.value = currentUserEmail;
+  if (settingsPasswordInput) settingsPasswordInput.value = "";
+  if (settingsConfirmPasswordInput) settingsConfirmPasswordInput.value = "";
+  if (settingsModal) settingsModal.style.display = 'flex';
+}
 
-newChatBtn.addEventListener('click', () => {
-  createNewChat();
-});
+function closeSettingsModal() {
+  if (settingsModal) settingsModal.style.display = 'none';
+}
 
-logoutBtn.addEventListener("click", () => {
-  localStorage.removeItem("iara_logged_in");
-  localStorage.removeItem("iara_user_email");
-  window.location.replace("login.html");
-});
+if (openSettingsBtn) openSettingsBtn.addEventListener('click', openSettingsModal);
+if (settingsCancelBtn) settingsCancelBtn.addEventListener('click', closeSettingsModal);
 
-messageInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && !e.shiftKey) {
+if (settingsForm) {
+  settingsForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    sendMessage();
-    e.target.style.height = '52px';
-  }
-});
+    const newName = settingsNameInput.value.trim();
+    const newEmail = settingsEmailInput.value.trim();
+    const pass = settingsPasswordInput.value;
+    const confirmPass = settingsConfirmPasswordInput.value;
 
-messageInput.addEventListener("input", function () {
-  this.style.height = '52px';
-  this.style.height = (this.scrollHeight) + 'px';
-});
+    if (!newName || !newEmail) {
+      showCustomAlert("Erro de Validação", "Nome e E-mail não podem ficar vazios.");
+      return;
+    }
 
-sendBtn.addEventListener("click", sendMessage);
+    if (pass && pass !== confirmPass) {
+      showCustomAlert("Erro de Validação", "As senhas não coincidem.");
+      return;
+    }
+
+    localStorage.setItem("iara_user_name", newName);
+    localStorage.setItem("iara_user_email", newEmail);
+    updateProfileDisplay();
+    closeSettingsModal();
+    showCustomAlert("Sucesso", "Perfil atualizado com sucesso!");
+  });
+}
+
+// ===== EVENTOS =====
+if (mobileMenuBtn) {
+  mobileMenuBtn.addEventListener('click', () => {
+    sidebar.classList.toggle('open');
+    appLayout.classList.toggle('sidebar-open');
+  });
+}
+
+if (newChatBtn) {
+  newChatBtn.addEventListener('click', () => {
+    createNewChat();
+  });
+}
+
+if (logoutBtn) {
+  logoutBtn.addEventListener("click", () => {
+    localStorage.removeItem("iara_logged_in");
+    localStorage.removeItem("iara_user_email");
+    localStorage.removeItem("iara_user_name");
+    window.location.replace("login.html");
+  });
+}
+
+if (messageInput) {
+  messageInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+      e.target.style.height = '52px';
+    }
+  });
+
+  messageInput.addEventListener("input", function () {
+    this.style.height = '52px';
+    this.style.height = (this.scrollHeight) + 'px';
+  });
+}
+
+if (sendBtn) sendBtn.addEventListener("click", sendMessage);
 if (cancelBtn) {
   cancelBtn.addEventListener("click", () => {
     if (currentAbortController) {
@@ -411,7 +474,6 @@ if (cancelBtn) {
   });
 }
 
-// Modal Event Listeners
 if (renameCancelBtn) renameCancelBtn.addEventListener('click', closeRenameModal);
 if (renameConfirmBtn) renameConfirmBtn.addEventListener('click', handleRenameConfirm);
 if (renameInput) renameInput.addEventListener('keypress', (e) => {
@@ -424,6 +486,7 @@ if (deleteConfirmBtn) deleteConfirmBtn.addEventListener('click', handleDeleteCon
 window.addEventListener('click', (e) => {
   if (renameModal && e.target === renameModal) closeRenameModal();
   if (deleteModal && e.target === deleteModal) closeDeleteModal();
+  if (settingsModal && e.target === settingsModal) closeSettingsModal();
 });
 
 // ===== COMUNICAÇÃO (ENVIAR/RECEBER) =====
@@ -442,7 +505,6 @@ async function sendMessage() {
   sendBtn.style.display = 'none';
   if (cancelBtn) cancelBtn.style.display = 'flex';
 
-  // Adiciona a mensagem do usuário na estrutura de dados do chat alvo
   const newMsgObj = { role: "user", content: userMessage };
   chat.messages.push(newMsgObj);
   chat.updatedAt = Date.now();
@@ -450,7 +512,6 @@ async function sendMessage() {
   messageInput.value = "";
   messageInput.style.height = '52px';
 
-  // Só renderiza na tela se o usuário ainda estiver no mesmo chat
   if (currentChatId === targetChatId) {
     appendMessageUI("user", userMessage);
   }
@@ -465,7 +526,6 @@ async function sendMessage() {
   currentAbortController = new AbortController();
 
   try {
-    // Comunicar com o nosso Backend (ele processa e fala com a OpenAI)
     const response = await fetch(`${API_URL}/chats/${targetChatId}/message`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -481,7 +541,6 @@ async function sendMessage() {
       removeLoadingUI(loadingId);
     }
 
-    // Atualizar modelo de dados do chat correto
     chat.messages.push(botMsgObj);
 
     if (newTitle) {
@@ -491,7 +550,6 @@ async function sendMessage() {
     chat.updatedAt = Date.now();
     renderSidebar();
 
-    // Só faz a animação se o usuário AINDA estiver visualizando este chat
     if (currentChatId === targetChatId) {
       await appendMessageUITypewriter("bot", botMsgObj.content, targetChatId);
     } else {
@@ -531,53 +589,26 @@ async function sendMessage() {
 
 // ===== RENDERIZAÇÃO E FORMATAÇÃO =====
 
-/**
- * Configuração do marked com suporte a KaTeX
- */
 const katexExtension = {
   name: 'katex',
   level: 'inline',
   start(src) { return src.match(/\$|\\\(|\\\[/)?.index; },
   tokenizer(src, tokens) {
-    // Matemática em bloco $$ ... $$
     const blockMatch = src.match(/^\$\$([\s\S]+?)\$\$/);
     if (blockMatch) {
-      return {
-        type: 'katex',
-        raw: blockMatch[0],
-        text: blockMatch[1].trim(),
-        displayMode: true
-      };
+      return { type: 'katex', raw: blockMatch[0], text: blockMatch[1].trim(), displayMode: true };
     }
-    // Matemática em bloco \[ ... \]
     const blockBracketMatch = src.match(/^\\\[([\s\S]+?)\\\]/);
     if (blockBracketMatch) {
-      return {
-        type: 'katex',
-        raw: blockBracketMatch[0],
-        text: blockBracketMatch[1].trim(),
-        displayMode: true
-      };
+      return { type: 'katex', raw: blockBracketMatch[0], text: blockBracketMatch[1].trim(), displayMode: true };
     }
-    // Matemática inline $ ... $
     const inlineMatch = src.match(/^\$([^$]+?)\$/);
     if (inlineMatch) {
-      return {
-        type: 'katex',
-        raw: inlineMatch[0],
-        text: inlineMatch[1].trim(),
-        displayMode: false
-      };
+      return { type: 'katex', raw: inlineMatch[0], text: inlineMatch[1].trim(), displayMode: false };
     }
-    // Matemática inline \( ... \)
     const inlineBracketMatch = src.match(/^\\\(([\s\S]+?)\\\)/);
     if (inlineBracketMatch) {
-      return {
-        type: 'katex',
-        raw: inlineBracketMatch[0],
-        text: inlineBracketMatch[1].trim(),
-        displayMode: false
-      };
+      return { type: 'katex', raw: inlineBracketMatch[0], text: inlineBracketMatch[1].trim(), displayMode: false };
     }
   },
   renderer(token) {
@@ -588,16 +619,13 @@ const katexExtension = {
   }
 };
 
-marked.use({ extensions: [katexExtension] });
+if (window.marked && window.katex) {
+  marked.use({ extensions: [katexExtension] });
+}
 
 function formatMessageHTML(text) {
-  // Configurar marked para tratar quebras de linha como <br> e não escapar HTML que já tratamos
+  if (!window.marked) return text;
   const html = marked.parse(text, { breaks: true, gfm: true });
-
-  // Como o marked vai gerar blocos <pre><code> normais, 
-  // vamos pós-processar para adicionar o nosso cabeçalho com botão de copiar.
-  // Uma alternativa mais limpa seria usar um renderer customizado do marked, 
-  // mas para manter a lógica de split/join que já existe nos blocos de código e garantir o botão de copiar:
 
   const tempDiv = document.createElement('div');
   tempDiv.innerHTML = html;
@@ -613,8 +641,14 @@ function formatMessageHTML(text) {
     wrapper.className = 'code-block-wrapper';
     wrapper.innerHTML = `
       <div class="code-block-header">
-        <span class="language-label">${language}</span>
-        <button class="copy-btn" onclick="navigator.clipboard.writeText(this.parentElement.nextElementSibling.innerText)">📋 Copiar</button>
+        <span class="code-lang-badge">${language}</span>
+        <button class="copy-btn" onclick="navigator.clipboard.writeText(this.parentElement.nextElementSibling.innerText); this.innerHTML='✓ copiado'; setTimeout(() => this.innerHTML='<svg width=\\'14\\' height=\\'14\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'currentColor\\' stroke-width=\\'2\\' stroke-linecap=\\'round\\' stroke-linejoin=\\'round\\'><rect x=\\'9\\' y=\\'9\\' width=\\'13\\' height=\\'13\\' rx=\\'2\\' ry=\\'2\\'></rect><path d=\\'M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1\\'></path></svg> copiar', 2000)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+          copiar
+        </button>
       </div>
       <pre><code>${codeText.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</code></pre>
     `;
@@ -624,32 +658,39 @@ function formatMessageHTML(text) {
   return tempDiv.innerHTML;
 }
 
+// Chat UI Bubbles (Nodes 156-44 & 156-45)
 function appendMessageUI(sender, text) {
   const msgDiv = document.createElement("div");
   msgDiv.classList.add("message", sender);
 
-  const senderLabel = document.createElement("strong");
-  senderLabel.textContent = sender === "user" ? "Você" : "IARA";
-
-  const contentDiv = document.createElement("div");
-  contentDiv.classList.add("message-text");
+  const timeStr = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
   if (sender === "bot") {
-    contentDiv.innerHTML = formatMessageHTML(text);
+    msgDiv.innerHTML = `
+      <div class="message-bot-container">
+        <div class="message-bot-avatar">
+          <img src="assets/NewIaraLogo.png" alt="IARA" class="message-bot-logo-img" />
+        </div>
+        <div class="message-bubble-content">
+          <div class="message-header-line">
+            <span class="sender-name">IARA</span>
+            <span class="time">${timeStr}</span>
+          </div>
+          <div class="message-text">${formatMessageHTML(text)}</div>
+        </div>
+      </div>
+    `;
   } else {
-    // Preserve multiple spaces and newlines for user input (which may contain pasted code)
-    contentDiv.innerHTML = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/ /g, "&nbsp;").replace(/\n/g, "<br>");
+    msgDiv.innerHTML = `
+      <div class="message-user-container">
+        <div class="message-header-line user-header-line">
+          <span class="sender-name">${currentUserName.split(' ')[0]}</span>
+          <span class="time">${timeStr}</span>
+        </div>
+        <div class="message-text">${text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/ /g, "&nbsp;").replace(/\n/g, "<br>")}</div>
+      </div>
+    `;
   }
-
-  const timeEl = document.createElement("time");
-  timeEl.textContent = new Date().toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit"
-  });
-
-  msgDiv.appendChild(senderLabel);
-  msgDiv.appendChild(contentDiv);
-  msgDiv.appendChild(timeEl);
 
   chatDiv.appendChild(msgDiv);
   chatDiv.scrollTop = chatDiv.scrollHeight;
@@ -658,23 +699,27 @@ function appendMessageUI(sender, text) {
 async function appendMessageUITypewriter(sender, text, targetChatId) {
   const msgDiv = document.createElement("div");
   msgDiv.classList.add("message", sender);
+  const timeStr = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-  const senderLabel = document.createElement("strong");
-  senderLabel.textContent = sender === "user" ? "" : "IARA:";
-
-  const contentDiv = document.createElement("div");
-  contentDiv.classList.add("message-text");
-
-  const timeEl = document.createElement("time");
-  timeEl.textContent = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-
-  msgDiv.appendChild(senderLabel);
-  msgDiv.appendChild(contentDiv);
-  msgDiv.appendChild(timeEl);
+  msgDiv.innerHTML = `
+    <div class="message-bot-container">
+      <div class="message-bot-avatar">
+        <img src="assets/NewIaraLogo.png" alt="IARA" class="message-bot-logo-img" />
+      </div>
+      <div class="message-bubble-content">
+        <div class="message-header-line">
+          <span class="sender-name">IARA</span>
+          <span class="time">${timeStr}</span>
+        </div>
+        <div class="message-text"></div>
+      </div>
+    </div>
+  `;
 
   chatDiv.appendChild(msgDiv);
   chatDiv.scrollTop = chatDiv.scrollHeight;
 
+  const contentDiv = msgDiv.querySelector(".message-text");
   let currentRawText = "";
   const parts = text.split("```");
 
@@ -687,14 +732,14 @@ async function appendMessageUITypewriter(sender, text, targetChatId) {
         currentRawText += char;
         contentDiv.innerHTML = formatMessageHTML(currentRawText);
         chatDiv.scrollTop = chatDiv.scrollHeight;
-        await new Promise(r => setTimeout(r, 5));
+        await new Promise(r => setTimeout(r, 4));
       }
     } else {
       const codeBlockFull = "```" + parts[i] + "```";
       currentRawText += codeBlockFull;
       contentDiv.innerHTML = formatMessageHTML(currentRawText);
       chatDiv.scrollTop = chatDiv.scrollHeight;
-      await new Promise(r => setTimeout(r, 50));
+      await new Promise(r => setTimeout(r, 40));
     }
   }
 
@@ -709,14 +754,19 @@ function appendLoadingUI(id) {
   msgDiv.classList.add("message", "bot");
   msgDiv.id = id;
 
-  const prefix = "<strong>IARA:</strong> ";
-
-  const indicatorDiv = document.createElement("div");
-  indicatorDiv.classList.add("typing-indicator");
-  indicatorDiv.innerHTML = "<span></span><span></span><span></span>";
-
-  msgDiv.innerHTML = prefix;
-  msgDiv.appendChild(indicatorDiv);
+  msgDiv.innerHTML = `
+    <div class="message-bot-container">
+      <div class="message-bot-avatar">
+        <img src="assets/NewIaraLogo.png" alt="IARA" class="message-bot-logo-img" />
+      </div>
+      <div class="message-bubble-content">
+        <div class="message-header-line">
+          <span class="sender-name">IARA</span>
+        </div>
+        <div class="typing-indicator"><span></span><span></span><span></span></div>
+      </div>
+    </div>
+  `;
 
   chatDiv.appendChild(msgDiv);
   chatDiv.scrollTop = chatDiv.scrollHeight;

@@ -1,148 +1,337 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IARA - Painel de Administração & RAG</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>IARA - Painel do Professor & Administração</title>
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
     <style>
-        body { margin: 0; font-family: 'Outfit', sans-serif; background-color: #f7f9fc; color: #333; }
-        header { background-color: white; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        h1 { color: #f02492; margin: 0; font-size: 24px; font-weight: 700; }
-        .logout-btn { padding: 8px 16px; background-color: #f02492; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s; }
-        .logout-btn:hover { background-color: #d01d78; }
-        
-        .container { max-width: 1000px; margin: 30px auto; padding: 0 20px; }
-        
+        body {
+            margin: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #fdf5f8;
+            color: #2d2b38;
+            min-height: 100vh;
+            overflow-y: auto;
+        }
+
+        .admin-header {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background-color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(255, 92, 138, 0.08);
+            border-bottom: 1px solid rgba(255, 92, 138, 0.15);
+            zoom: 1.2;
+        }
+
+        .admin-header h1 {
+            background: linear-gradient(135deg, rgb(255, 92, 138) 0%, rgb(168, 85, 247) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 0;
+            font-size: 22px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logout-btn {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #ff5c8a 0%, #a855f7 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(255, 92, 138, 0.25);
+        }
+
+        .logout-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(255, 92, 138, 0.35);
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 30px auto;
+            padding: 0 20px;
+            zoom: 1.2;
+        }
+
         /* Section Cards */
-        .card-section { background: white; border-radius: 12px; padding: 25px; margin-bottom: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); }
-        .card-section h2 { margin-top: 0; color: #1a1a2e; font-size: 20px; border-bottom: 2px solid #fdf0f7; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-        
+        .card-section {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(255, 92, 138, 0.06);
+            border: 1px solid rgba(255, 92, 138, 0.12);
+        }
+
+        .card-section h2 {
+            margin-top: 0;
+            color: #1a1a2e;
+            font-size: 20px;
+            font-weight: 800;
+            border-bottom: 2px solid #fdf0f7;
+            padding-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-section p.subtitle {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
         /* Form & Upload */
-        .upload-form { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; margin-top: 15px; }
-        .upload-form input[type="file"] { padding: 8px; border: 1px dashed #ccc; border-radius: 6px; background: #fafafa; flex: 1; min-width: 250px; }
-        .upload-form select { padding: 10px; border: 1px solid #ccc; border-radius: 6px; background: white; font-family: inherit; font-size: 14px; }
-        .upload-btn { padding: 10px 20px; background-color: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s; }
-        .upload-btn:hover { background-color: #059669; }
-        .upload-status { font-weight: 500; font-size: 14px; margin-top: 10px; }
-        
+        .upload-form {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        .file-upload-box {
+            flex: 1;
+            min-width: 280px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #fafafa;
+            border: 2px dashed #f0c2d3;
+            padding: 8px 12px;
+            border-radius: 12px;
+        }
+
+        .file-upload-box input[type="file"] {
+            display: none;
+        }
+
+        .btn-browse {
+            padding: 8px 16px;
+            background: #fff;
+            border: 1.5px solid #ff5c8a;
+            color: #ff5c8a;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .btn-browse:hover {
+            background: #fff0f5;
+        }
+
+        .file-name-text {
+            font-size: 13px;
+            color: #777;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+        }
+
+        .upload-form select {
+            padding: 12px;
+            border: 1.5px solid #eee;
+            border-radius: 12px;
+            background: white;
+            font-family: inherit;
+            font-size: 14px;
+            color: #333;
+            outline: none;
+        }
+
+        .upload-form select:focus {
+            border-color: #ff5c8a;
+        }
+
+        .upload-btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #ff5c8a 0%, #a855f7 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(255, 92, 138, 0.3);
+        }
+
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 92, 138, 0.4);
+        }
+
+        .upload-status {
+            font-weight: 600;
+            font-size: 14px;
+            margin-top: 12px;
+        }
+
         /* Documents Table */
-        .doc-list { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .doc-list th, .doc-list td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; font-size: 14px; }
-        .doc-list th { background: #fdf0f7; color: #f02492; font-weight: 600; }
-        .badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
-        .badge-concept { background: #e0f2fe; color: #0369a1; }
-        .badge-code { background: #fef3c7; color: #b45309; }
-        .delete-btn { padding: 4px 10px; background: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; }
-        .delete-btn:hover { background: #dc2626; }
-        
-        /* User Cards */
-        .user-card { background: white; border-radius: 8px; margin-bottom: 15px; border: 1px solid #eee; overflow: hidden; }
-        .user-header { padding: 18px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: #fff; transition: background 0.2s; }
-        .user-header:hover { background: #fafafa; }
-        .user-info strong { font-size: 17px; color: #333; display: block; }
-        .user-info span { font-size: 13px; color: #777; }
-        .user-stats { font-size: 13px; font-weight: 600; color: #f02492; background: #fdf0f7; padding: 4px 10px; border-radius: 20px; }
-        
-        /* Chats List */
-        .chats-container { display: none; padding: 18px; background: #fafbfc; border-top: 1px solid #eee; }
-        .chats-container.open { display: block; }
-        
-        .chat-item { background: white; border: 1px solid #eee; padding: 12px 16px; border-radius: 6px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-        .chat-info strong { display: block; font-size: 14px; margin-bottom: 3px; }
-        .chat-info span { font-size: 12px; color: #888; }
-        
-        .download-btn { padding: 6px 12px; background-color: #fff; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; font-size: 13px; color: #555; transition: 0.2s; }
-        .download-btn:hover { border-color: #f02492; color: #f02492; }
+        .doc-list {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .doc-list th,
+        .doc-list td {
+            text-align: left;
+            padding: 14px 16px;
+            border-bottom: 1px solid #f5e6ed;
+            font-size: 14px;
+        }
+
+        .doc-list th {
+            background: #fdf0f5;
+            color: #ff5c8a;
+            font-weight: 700;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .badge-concept {
+            background: #ffe5ec;
+            color: #ff5c8a;
+        }
+
+        .badge-code {
+            background: #f3e8ff;
+            color: #a855f7;
+        }
+
+        .delete-btn-icon {
+            background: none;
+            border: none;
+            color: #ef4444;
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 6px;
+            transition: background 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .delete-btn-icon:hover {
+            background: #fee2e2;
+        }
     </style>
 </head>
+
 <body>
-    <header>
-        <h1>Painel do Professor & Administração IARA</h1>
-        <button class="logout-btn" id="logout-btn">Sair</button>
+    <header class="admin-header">
+        <h1>
+            <img src="assets/NewIaraLogo.png" alt="IARA Logo" class="brand-logo-img-admin" />
+            Painel do Professor & Administração IARA
+        </h1>
+        <div style="display: flex; gap: 12px; align-items: center;">
+            <a href="index.html" class="btn-browse"
+                style="text-decoration: none; padding: 10px 18px; border-radius: 12px; display: inline-flex; align-items: center; gap: 6px;">
+                💬 Voltar ao Chat
+            </a>
+            <button class="logout-btn" id="logout-btn">Sair</button>
+        </div>
     </header>
-    
+
     <div class="container">
-        <!-- RAG Ingestion Section -->
+        <!-- RAG Ingestion Section / Node 156-46 -->
         <div class="card-section">
-            <h2>📚 Acervo RAG & Exemplos de Código (Upload com 1 Clique)</h2>
-            <p style="color: #666; font-size: 14px; margin-bottom: 10px;">
-                Envie apostilas, enunciados (PDF/TXT/MD) ou arquivos de código modelo (C++/Python). O sistema RAG fatiará, vetorizará com <strong>SentenceTransformers</strong> e integrará ao MongoDB Atlas.
+            <h2>📚 Biblioteca de Conteúdos da IARA</h2>
+            <p class="subtitle">
+                Envie apostilas, enunciados (PDF/TXT/MD) ou arquivos de código modelo. O sistema RAG fatiará, vetorizará
+                e integrará à base de conhecimento.
             </p>
             <form class="upload-form" id="upload-form">
-                <input type="file" id="file-input" required accept=".pdf,.txt,.md,.cpp,.c,.py,.java">
+                <div class="file-upload-box">
+                    <button type="button" class="btn-browse"
+                        onclick="document.getElementById('file-input').click()">Procurar</button>
+                    <span class="file-name-text" id="file-name-display">Nenhum arquivo selecionado...</span>
+                    <input type="file" id="file-input" required accept=".pdf,.txt,.md,.cpp,.c,.py,.java"
+                        onchange="updateFileNameDisplay(this)">
+                </div>
+
                 <select id="category-select">
-                    <option value="concept">📘 Conceito Didático / Teoria</option>
-                    <option value="code_example">💻 Exemplo de Código (Template)</option>
+                    <option value="concept">📘 Didático / Teoria</option>
+                    <option value="code_example">💻 Exemplo de Código</option>
                 </select>
-                <button type="submit" class="upload-btn" id="upload-btn">Enviar para o RAG</button>
+
+                <button type="submit" class="upload-btn" id="upload-btn">Enviar</button>
             </form>
             <div class="upload-status" id="upload-status"></div>
 
-            <h3 style="margin-top: 25px; font-size: 16px; color: #444;">Documentos Cadastrados no RAG</h3>
+            <h3 style="margin-top: 30px; font-size: 16px; color: #333;">Documentos Cadastrados</h3>
             <table class="doc-list" id="doc-table">
                 <thead>
                     <tr>
                         <th>Nome do Arquivo</th>
                         <th>Categoria</th>
                         <th>Chunks no Mongo</th>
-                        <th>Ações</th>
+                        <th style="width: 80px; text-align: center;">Ações</th>
                     </tr>
                 </thead>
                 <tbody id="doc-tbody">
-                    <tr><td colspan="4" style="color: #888; text-align: center;">Carregando documentos...</td></tr>
+                    <tr>
+                        <td colspan="4" style="color: #888; text-align: center; padding: 20px;">Carregando documentos...
+                        </td>
+                    </tr>
                 </tbody>
             </table>
-        </div>
-
-        <!-- User Chats Section -->
-        <div class="card-section">
-            <h2>💬 Histórico de Usuários & Conversas</h2>
-            <div id="users-container">
-                <p style="text-align: center; color: #888;">Carregando dados dos usuários...</p>
-            </div>
         </div>
     </div>
 
     <script>
         // Restriction Check
-        if (localStorage.getItem("iara_logged_in") !== "true" || localStorage.getItem("iara_user_role") !== "admin") {
+        const userRole = localStorage.getItem("iara_user_role");
+        if (localStorage.getItem("iara_logged_in") !== "true" || (userRole !== "admin" && userRole !== "professor")) {
             window.location.replace("login.html");
         }
-        
+
         document.getElementById("logout-btn").addEventListener("click", () => {
             localStorage.clear();
             window.location.replace("login.html");
         });
 
-        // Download Chat as TXT
-        function downloadTxt(filename, text) {
-            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+        function updateFileNameDisplay(input) {
+            const display = document.getElementById("file-name-display");
+            if (input.files && input.files[0]) {
+                display.innerText = input.files[0].name;
+                display.style.color = "#333";
+            } else {
+                display.innerText = "Nenhum arquivo selecionado...";
+                display.style.color = "#777";
+            }
         }
 
-        function handleDownloadChat(chat) {
-            let content = `IARA Export - Conversa\nTítulo: ${chat.title}\nData: ${new Date(chat.createdAt).toLocaleString()}\n\n`;
-            content += `--------------------------------------------------\n\n`;
-            
-            chat.messages.forEach(msg => {
-                let roleLabel = 'Sistema';
-                if (msg.role === 'user') roleLabel = 'Usuário';
-                if (msg.role === 'assistant') roleLabel = 'IARA';
-                content += `[${roleLabel}]:\n${msg.content}\n\n`;
-            });
-            
-            downloadTxt(`conversa_${chat._id}.txt`, content);
-        }
-
-        // Load RAG Documents
+        // Load RAG Documents dynamically from backend
         async function loadDocuments() {
             try {
                 const res = await fetch("http://localhost:3000/api/documents");
@@ -151,21 +340,28 @@
                 tbody.innerHTML = "";
 
                 if (!docs || docs.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="4" style="color: #999; text-align: center;">Nenhum documento cadastrado no RAG.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="4" style="color: #999; text-align: center; padding: 20px;">Nenhum documento cadastrado.</td></tr>`;
                     return;
                 }
 
                 docs.forEach(doc => {
                     const tr = document.createElement("tr");
-                    const catBadge = doc.category === 'code_example' 
-                        ? `<span class="badge badge-code">Exemplo de Código</span>` 
-                        : `<span class="badge badge-concept">Conceito Didático</span>`;
-                    
+                    const catBadge = doc.category === 'code_example'
+                        ? `<span class="badge badge-code">Código</span>`
+                        : `<span class="badge badge-concept">Didático</span>`;
+
                     tr.innerHTML = `
                         <td><strong>${doc.filename}</strong></td>
                         <td>${catBadge}</td>
-                        <td>${doc.chunks_count} chunks</td>
-                        <td><button class="delete-btn" onclick="deleteDoc('${doc.filename}')">Excluir</button></td>
+                        <td>${doc.chunks_count || 1} chunks</td>
+                        <td style="text-align: center;">
+                            <button class="delete-btn-icon" onclick="deleteDoc('${doc.filename}')" title="Excluir">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                </svg>
+                            </button>
+                        </td>
                     `;
                     tbody.appendChild(tr);
                 });
@@ -199,9 +395,9 @@
             formData.append("category", catSelect.value);
 
             uploadBtn.disabled = true;
-            uploadBtn.innerText = "Processando RAG...";
-            statusDiv.style.color = "#0369a1";
-            statusDiv.innerText = "⏳ Fatiando texto e gerando embeddings com SentenceTransformers...";
+            uploadBtn.innerText = "Processando...";
+            statusDiv.style.color = "#a855f7";
+            statusDiv.innerText = "⏳ Enviando e processando documento RAG...";
 
             try {
                 const res = await fetch("http://localhost:3000/api/documents/upload", {
@@ -210,101 +406,26 @@
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    statusDiv.style.color = "#059669";
-                    statusDiv.innerText = `✅ ${data.message} (${data.chunks_created} chunks salvos no Mongo Atlas)`;
+                    statusDiv.style.color = "#10b981";
+                    statusDiv.innerText = `✅ ${data.message}`;
                     fileInput.value = "";
+                    document.getElementById("file-name-display").innerText = "Nenhum arquivo selecionado...";
                     loadDocuments();
                 } else {
-                    statusDiv.style.color = "#dc2626";
+                    statusDiv.style.color = "#ef4444";
                     statusDiv.innerText = `❌ Erro: ${data.detail || 'Falha ao enviar documento.'}`;
                 }
             } catch (err) {
-                statusDiv.style.color = "#dc2626";
-                statusDiv.innerText = "❌ Erro de conexão com o servidor Python.";
+                statusDiv.style.color = "#ef4444";
+                statusDiv.innerText = "❌ Erro de conexão com o servidor.";
             } finally {
                 uploadBtn.disabled = false;
-                uploadBtn.innerText = "Enviar para o RAG";
+                uploadBtn.innerText = "Enviar";
             }
         });
 
-        // Load Users & Chats
-        async function loadUsersData() {
-            try {
-                const response = await fetch("http://localhost:3000/api/admin/users-chats");
-                const users = await response.json();
-                
-                const container = document.getElementById("users-container");
-                container.innerHTML = "";
-                
-                if (!users || users.length === 0) {
-                    container.innerHTML = "<p>Nenhum usuário encontrado.</p>";
-                    return;
-                }
-
-                users.forEach(user => {
-                    const card = document.createElement('div');
-                    card.className = 'user-card';
-                    
-                    const roleBadge = user.role === 'admin' ? ' (Admin)' : '';
-                    
-                    const header = document.createElement('div');
-                    header.className = 'user-header';
-                    header.innerHTML = `
-                        <div class="user-info">
-                            <strong>${user.name}${roleBadge}</strong>
-                            <span>${user.email}</span>
-                        </div>
-                        <div class="user-stats">
-                            ${user.chats.length} Conversa(s)
-                        </div>
-                    `;
-                    
-                    const chatsDiv = document.createElement('div');
-                    chatsDiv.className = 'chats-container';
-                    
-                    if (user.chats.length === 0) {
-                        chatsDiv.innerHTML = `<p style="color: #999; font-size: 14px;">Nenhuma conversa registrada para este usuário.</p>`;
-                    } else {
-                        user.chats.sort((a,b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-                        
-                        user.chats.forEach(chat => {
-                            const dateStr = new Date(chat.updatedAt).toLocaleString();
-                            const chatItem = document.createElement('div');
-                            chatItem.className = 'chat-item';
-                            chatItem.innerHTML = `
-                                <div class="chat-info">
-                                    <strong>${chat.title}</strong>
-                                    <span>Última msg: ${dateStr} | ${chat.messages.length} mensagens</span>
-                                </div>
-                                <button class="download-btn">Baixar .txt</button>
-                            `;
-                            
-                            const btn = chatItem.querySelector('.download-btn');
-                            btn.addEventListener('click', (e) => {
-                                e.stopPropagation();
-                                handleDownloadChat(chat);
-                            });
-                            
-                            chatsDiv.appendChild(chatItem);
-                        });
-                    }
-                    
-                    header.addEventListener('click', () => {
-                        chatsDiv.classList.toggle('open');
-                    });
-                    
-                    card.appendChild(header);
-                    card.appendChild(chatsDiv);
-                    container.appendChild(card);
-                });
-            } catch (err) {
-                console.error(err);
-                document.getElementById("users-container").innerHTML = "<p style='color: red;'>Erro ao carregar dados do servidor.</p>";
-            }
-        }
-        
         loadDocuments();
-        loadUsersData();
     </script>
 </body>
+
 </html>

@@ -4,31 +4,66 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>IARA - Login</title>
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
 </head>
-<body class="auth-body">
+<body class="auth-body-split">
     
-  <div class="auth-container">
-    <div class="auth-card">
-      <img src="assets/logoChat.png" class="auth-logo" alt="IARA Logo">
-      <h1>IARA</h1>
-      <p class="subtitle">Inteligência Artificial de Raciocínio Algorítmico</p>
-
-      <form id="login-form" novalidate>
-        <div class="form-group">
-          <label for="email">E-mail</label>
-          <input type="email" id="email" placeholder="seu@email.com" required />
+  <div class="auth-split-layout">
+    <!-- Left Illustration Side -->
+    <div class="auth-left-side">
+      <div class="auth-brand-header">
+        <div class="brand-logo-icon">
+          <img src="assets/NewIaraLogo.png" alt="IARA Logo" class="brand-logo-img" />
         </div>
-
-        <div class="form-group">
-          <label for="password">Senha</label>
-          <input type="password" id="password" placeholder="••••••••" required />
+        <div class="brand-text">
+          <h1>IARA</h1>
+          <p style="font-size: 24px">Inteligência Artificial para o Raciocínio Algorítmico</p>
         </div>
+      </div>
 
-        <button type="submit" class="auth-btn">Entrar</button>
-      </form>
+      <div class="auth-illustration-container">
+        <img src="assets/IARAmulher.png" alt="IARA Ilustração" class="auth-illustration-img" />
+      </div>
+    </div>
 
-      <p class="switch-link">Ainda não tem conta? <a href="register.html">Criar conta</a></p>
+    <!-- Right Form Side -->
+    <div class="auth-right-side">
+      <div class="auth-card">
+        <h2 class="auth-title">Seja <span class="highlight-pink">Bem-vindo!</span></h2>
+        <p class="auth-subtitle">Faça login para continuar aprendendo.</p>
+
+        <form id="login-form" novalidate>
+          <div class="form-group">
+            <label for="email">E-mail</label>
+            <div class="input-icon-wrapper">
+              <svg class="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF5C8A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                <polyline points="22,6 12,13 2,6"></polyline>
+              </svg>
+              <input type="email" id="email" placeholder="Inserir e-mail" required autocomplete="email" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="password">Senha</label>
+            <div class="input-icon-wrapper">
+              <svg class="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF5C8A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+              <input type="password" id="password" placeholder="Inserir senha" required autocomplete="current-password" />
+            </div>
+          </div>
+
+          <button type="submit" class="btn-gradient full-width">Entrar</button>
+        </form>
+
+        <p class="switch-link">Ainda não tem uma conta? <a href="pre_cadastro.html" class="link-pink">Criar conta</a></p>
+      </div>
     </div>
   </div>
 
