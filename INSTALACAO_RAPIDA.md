@@ -1,6 +1,6 @@
-# 🚀 Guia de Execução Rápida - IARA (Avaliação Acadêmica)
+# 🚀 Guia de Execução Rápida - IARA 
 
-Este guia foi elaborado para permitir que o professor/avaliador execute a aplicação IARA em qualquer computador **sem a necessidade de configurar chaves de API externas (OpenAI) ou banco de dados em nuvem (MongoDB Atlas)**.
+Este guia foi elaborado para permitir que o avaliador execute a aplicação IARA em qualquer computador **sem a necessidade de configurar chaves de API externas (OpenAI) ou banco de dados em nuvem (MongoDB Atlas)**.
 
 ---
 

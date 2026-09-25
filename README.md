@@ -4,14 +4,6 @@ O projeto **IARA** é uma plataforma educacional web interativa desenvolvida par
 
 ---
 
-## 📄 Documentação do Trabalho de Interface Web
-
-Para visualizar o documento detalhado relativo aos **Princípios de Design, Usabilidade, Experiência do Usuário (UX) e Acessibilidade (WCAG)** exigidos para a entrega do Trabalho 1, acesse:
-
-📄 **[Documento Explicativo da Interface (DOCUMENTO_EXPLICATIVO_IARA.md)](file:///home/Leo_Borges/IARAFRONT/DOCUMENTO_EXPLICATIVO_IARA.md)**
-
----
-
 ## ⚡ Execução Rápida Sem Credenciais (Avaliação Acadêmica)
 
 A aplicação foi projetada com um **Modo Demonstração Zero-Setup** para permitir a execução no computador do professor sem a necessidade de chaves da API OpenAI ou banco de dados MongoDB Atlas.
