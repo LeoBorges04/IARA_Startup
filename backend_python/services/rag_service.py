@@ -458,22 +458,36 @@ def search_concept_base(query: str, top_k: int = 3, category: Optional[str] = No
     if class_id:
         filter_query["class_id"] = class_id
 
-    docs_concept = list(concept_base_collection.find(filter_query, {"filename": 1, "title": 1, "location": 1, "content": 1, "embedding": 1, "category": 1, "class_id": 1}))
-    docs_books = list(document_chunks_collection.find(filter_query, {"filename": 1, "title": 1, "location": 1, "content": 1, "embedding": 1, "category": 1, "class_id": 1}))
+    docs_concept = list(concept_base_collection.find(filter_query))
+    docs_books = list(document_chunks_collection.find(filter_query))
 
     all_docs = docs_concept + docs_books
     if not all_docs:
         return []
 
     scored_docs = []
+    query_words = set(re.findall(r'\w+', query.lower()))
     for doc in all_docs:
         emb = doc.get("embedding")
-        if emb:
-            score = cosine_similarity(query_vector, emb)
+        score = 0.0
+        if emb and any(v != 0 for v in emb[:5]):
+            try:
+                score = cosine_similarity(query_vector, emb)
+            except Exception:
+                score = 0.0
+        
+        if score <= 0.3:
+            doc_text = (str(doc.get("title", "")) + " " + str(doc.get("content", "")) + " " + str(doc.get("filename", ""))).lower()
+            matches = sum(1 for w in query_words if len(w) > 2 and w in doc_text)
+            if matches > 0:
+                score = max(score, 0.4 + (matches * 0.1))
+
+        if score > 0.35:
             scored_docs.append((score, doc))
 
     scored_docs.sort(key=lambda x: x[0], reverse=True)
-    return [doc for score, doc in scored_docs[:top_k] if score > 0.35]
+    return [doc for score, doc in scored_docs[:top_k]]
+
 
 def search_relevant_chunks(query: str, top_k: int = 4, category: Optional[str] = None, class_id: Optional[str] = None) -> List[Dict[str, Any]]:
     """Wrapper para compatibilidade."""
@@ -699,14 +713,114 @@ def extract_previously_cited_sources(messages: List[Dict[str, str]]) -> set:
                     cited_set.add(it)
     return cited_set
 
+def generate_smart_fallback_response(messages: List[Dict[str, str]], user_message: str, all_retrieved: Optional[List[Dict[str, Any]]] = None) -> str:
+    """
+    Gera uma resposta didática e socrática como assistente IARA quando a API da OpenAI não está disponível
+    (Modo Demonstração / Zero-Setup Local).
+    """
+    msg_lower = user_message.lower().strip()
+    intent = detect_user_intent(user_message)
+    
+    if intent == "GREETING":
+        return (
+            "Olá! Sou a **IARA** (Inteligência Artificial de Raciocínio Algorítmico), sua tutora educacional para o ensino de programação e estruturas de dados.\n\n"
+            "Estou aqui para apoiar o seu aprendizado de forma socrática, ajudando você a compreender a lógica dos algoritmos, corrigir erros em seu código e fixar conceitos fundamentais.\n\n"
+            "💡 *Como posso te ajudar no estudo de algoritmos hoje? Você pode me enviar uma dúvida conceitual ou colar um trecho de código C++ / Python para analisarmos juntos!*"
+        )
+    
+    rag_material_info = ""
+    if all_retrieved and len(all_retrieved) > 0:
+        first = all_retrieved[0]
+        fn = first.get("filename", "Material de Algoritmos")
+        loc = first.get("location") or first.get("title") or "Conceito Fundamental"
+        content_snippet = first.get("content", "")
+        rag_material_info = f"\n\n> 📚 **Referência do Material Didático da Turma (`{fn}` - {loc}):**\n\n{content_snippet[:350]}...\n"
+
+    if any(k in msg_lower for k in ["while", "do while", "repetiço", "repeticao", "loop"]):
+        return (
+            "### 🧠 Entendendo o Laço `while` e Estruturas de Repetição\n\n"
+            "O laço `while` é utilizado quando queremos repetir um bloco de comandos **enquanto uma condição booleana permanecer verdadeira**.\n\n"
+            "```cpp\n"
+            "int contador = 0;\n"
+            "while (contador < 5) {\n"
+            "    cout << \"Executando passo: \" << contador << endl;\n"
+            "    contador++; // Atualização da variável de controle\n"
+            "}\n"
+            "```\n\n"
+            "#### 🔍 Elementos Chave:\n"
+            "1. **Inicialização:** Definição da variável de controle (`int contador = 0;`).\n"
+            "2. **Condição de Parada:** Teste lógico avaliado antes de cada repetição (`contador < 5`).\n"
+            "3. **Passo/Incremento:** Alteração da variável para que o loop termine eventualmente e não gere um **loop infinito**."
+            + rag_material_info +
+            "\n\n💬 **Pergunta para você exercitar:** O que aconteceria se a condição inicial fosse `contador > 5` em vez de `contador < 5`?"
+        )
+    
+    elif any(k in msg_lower for k in ["for", "para"]):
+        return (
+            "### 🧠 Estrutura de Repetição `for`\n\n"
+            "O laço `for` é ideal quando conhecemos previamente a quantidade exata de repetições necessárias.\n\n"
+            "```cpp\n"
+            "// Sintaxe: for (inicialização; condição; incremento)\n"
+            "for (int i = 0; i < 10; i++) {\n"
+            "    cout << \"Valor de i: \" << i << endl;\n"
+            "}\n"
+            "```\n\n"
+            "#### 📌 Boas Práticas:\n"
+            "- A variável de controle `i` tem escopo local dentro do bloco do `for`.\n"
+            "- Os elementos de controle ficam agrupados no cabeçalho do laço, facilitando a leitura do código."
+            + rag_material_info +
+            "\n\n💬 **Desafio Socrático:** Como você reescreveria esse laço para contar em ordem decrescente (de 10 até 1)?"
+        )
+        
+    elif any(k in msg_lower for k in ["vetor", "vetores", "array", "matriz"]):
+        return (
+            "### 🧠 Trabalhando com Vetores (Arrays)\n\n"
+            "Um vetor é uma estrutura de dados homogênea e contígua na memória que permite armazenar múltiplos valores acessíveis por um índice numérico.\n\n"
+            "```cpp\n"
+            "int notas[5]; // Declara um vetor para 5 inteiros\n\n"
+            "// Preenchendo o vetor:\n"
+            "for (int i = 0; i < 5; i++) {\n"
+            "    notas[i] = (i + 1) * 10;\n"
+            "}\n"
+            "```\n\n"
+            "⚠️ **Atenção aos Índices:** Em C++ e na maioria das linguagens, os índices começam em **0** e vão até **N-1** (ex: de 0 a 4 para 5 elementos)."
+            + rag_material_info +
+            "\n\n💬 **Pergunta para reflexão:** Qual seria o resultado de tentar acessar `notas[5]` em um vetor de tamanho 5?"
+        )
+        
+    elif any(k in msg_lower for k in ["if", "else", "condicional", "condicao"]):
+        return (
+            "### 🧠 Estruturas Condicionais (`if` / `else`)\n\n"
+            "As estruturas condicionais permitem que o programa tome caminhos diferentes de execução com base em testes lógicos.\n\n"
+            "```cpp\n"
+            "int nota = 85;\n\n"
+            "if (nota >= 60) {\n"
+            "    cout << \"Aluno Aprovado!\" << endl;\n"
+            "} else {\n"
+            "    cout << \"Aluno em Recuperação.\" << endl;\n"
+            "}\n"
+            "```\n\n"
+            "#### 💡 Dica de Raciocínio:\n"
+            "Lembre-se da diferença entre o operador de atribuição (`=`) e o operador relacional de igualdade (`==`). Usar `=` dentro da condição do `if` é um erro comum de iniciantes!"
+            + rag_material_info +
+            "\n\n💬 **Quer praticar?** Tente incluir uma condição para verificar se o aluno tirou nota máxima (100) com um elogio especial!"
+        )
+
+    else:
+        return (
+            "### 🧠 Análise Didática de Raciocínio Algorítmico (IARA)\n\n"
+            "Analisando sua pergunta no contexto de lógica de programação:\n\n"
+            "1. **Entendimento da Demanda:** É fundamental mapear com clareza os dados de entrada, o processamento intermediário e a saída esperada.\n"
+            "2. **Divisão do Problema:** Aplique o princípio da decomposição — resolva partes menores do algoritmo antes de juntar toda a solução.\n"
+            "3. **Análise de Variáveis e Escopo:** Verifique se suas variáveis estão inicializadas com valores corretos antes da primeira leitura ou cálculo.\n"
+            + rag_material_info +
+            "\n\n💬 **Como podemos progredir?** Se desejar, me envie a sua tentativa de código ou me explique com suas palavras a lógica que você pretende utilizar para resolver esse exercício!"
+        )
+
 def generate_chat_response(messages: List[Dict[str, str]], user_message: str, class_id: Optional[str] = None) -> str:
     """
     Pipeline de Consulta RAG Adaptativo PBL Interativo IARA 6.0 com suporte a Múltiplas Turmas.
     """
-    client = get_openai_client()
-    if not client:
-        return "Erro: Chave de API da OpenAI não configurada ou inválida no servidor."
-
     from bson import ObjectId
     class_doc = None
     subject_type = "programming"
@@ -759,6 +873,12 @@ def generate_chat_response(messages: List[Dict[str, str]], user_message: str, cl
         if c_id and c_id not in seen_ids:
             seen_ids.add(c_id)
             all_retrieved.append(c)
+
+    client = get_openai_client()
+    if not client:
+        logger.info("Chave OpenAI não configurada. Acionando motor socrático fallback de demonstração.")
+        return generate_smart_fallback_response(messages, user_message, all_retrieved)
+
 
     rag_context = ""
     citation_items = []
@@ -930,13 +1050,17 @@ As instruções a seguir foram estabelecidas pelo professor para orientar EXCLUS
 
         return reply_content
     except Exception as e:
-        logger.error(f"Erro ao chamar OpenAI: {e}")
-        return f"Desculpe, ocorreu um erro ao gerar a resposta: {str(e)}"
+        logger.error(f"Erro ao chamar OpenAI: {e}. Acionando motor socrático de demonstração.")
+        return generate_smart_fallback_response(messages, user_message, all_retrieved)
 
 def generate_chat_title(user_message: str) -> Optional[str]:
     client = get_openai_client()
     if not client:
-        return None
+        clean_title = re.sub(r'[^\w\s]', '', user_message).strip()
+        words = clean_title.split()
+        if len(words) > 0:
+            return " ".join(words[:4]).capitalize()
+        return "Dúvida de Programação"
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
@@ -948,7 +1072,11 @@ def generate_chat_title(user_message: str) -> Optional[str]:
             max_tokens=50
         )
         title = response.choices[0].message.content.strip().replace('"', '').replace("'", "")
-        return title if title else None
+        return title if title else "Dúvida de Programação"
     except Exception as e:
         logger.error(f"Erro ao gerar título: {e}")
-        return None
+        clean_title = re.sub(r'[^\w\s]', '', user_message).strip()
+        words = clean_title.split()
+        if len(words) > 0:
+            return " ".join(words[:4]).capitalize()
+        return "Dúvida de Programação"

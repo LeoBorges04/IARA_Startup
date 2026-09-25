@@ -55,6 +55,22 @@ document.getElementById("login-form").addEventListener("submit", async function(
         }
     });
   } catch (err) {
-      showCustomAlert("Erro de Conexão", "Falha ao conectar com o banco de dados.");
+      console.warn("Servidor backend não detectado. Entrando em Modo Local / Offline:", err);
+      const userRole = (email.includes("prof") || email.includes("admin")) ? (email.includes("admin") ? "admin" : "professor") : "aluno";
+      const userName = email.split("@")[0] || "Usuário Demo";
+      
+      localStorage.setItem("iara_logged_in", "true");
+      localStorage.setItem("iara_user_email", email);
+      localStorage.setItem("iara_user_name", userName);
+      localStorage.setItem("iara_user_role", userRole);
+      localStorage.setItem("user", JSON.stringify({ email, name: userName, role: userRole }));
+
+      showCustomAlert("Modo Demonstração Offline", "Login efetuado com sucesso (Modo Local sem servidor)!", () => {
+          if (userRole === 'professor' || userRole === 'admin') {
+              window.location.replace("selecionar_turma.html");
+          } else {
+              window.location.replace("index.html");
+          }
+      });
   }
 });

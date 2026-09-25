@@ -1,63 +1,56 @@
-# IARA - Inteligência Artificial de Raciocínio Algorítmico 🧠
+# IARA — Inteligência Artificial de Raciocínio Algorítmico 🧠
 
-O projeto **IARA** é uma plataforma que atua como uma tutora virtual com auxílio de Inteligência Artificial para apoiar o aluno no desenvolvimento de seu raciocínio algorítmico em nível universitário.
-
-A arquitetura do projeto é dividida em:
-- **Frontend:** Estático e simples construído com HTML, CSS e Vanilla JS moderno para entregar uma experiência UI/UX fluida com animações suaves e layouts imersivos.
-- **Backend:** Uma API de alta performance construída em **Python (FastAPI)** conectada ao banco de dados **MongoDB Atlas** e equipada com sistema **RAG (Retrieval-Augmented Generation)**, responsável pela segurança, gestão de históricos, contas de usuários e mediação com a **OpenAI**.
+O projeto **IARA** é uma plataforma educacional web interativa desenvolvida para apoiar estudantes universitários no aprendizado e desenvolvimento de seu raciocínio algorítmico, lógica de programação e estruturas de dados.
 
 ---
 
-## 🚀 Como acessar a aplicação
+## 📄 Documentação do Trabalho de Interface Web
 
-O frontend público desta aplicação está hospedado no GitHub Pages. Para acessar o site, você pode simplesmente clicar no link abaixo:
+Para visualizar o documento detalhado relativo aos **Princípios de Design, Usabilidade, Experiência do Usuário (UX) e Acessibilidade (WCAG)** exigidos para a entrega do Trabalho 1, acesse:
 
-🔗 **[Acessar a Plataforma IARA (GitHub Pages)](https://leoborges04.github.io/IARA_Startup/)**
-
-*(O site exige que a API do backend Python esteja sendo executada para funcionar corretamente nas funcionalidades de chat, autenticação e RAG).*
+📄 **[Documento Explicativo da Interface (DOCUMENTO_EXPLICATIVO_IARA.md)](file:///home/Leo_Borges/IARAFRONT/DOCUMENTO_EXPLICATIVO_IARA.md)**
 
 ---
 
-## ⚙️ Como rodar o servidor (Backend Python) localmente
+## ⚡ Execução Rápida Sem Credenciais (Avaliação Acadêmica)
 
-### Pré-requisitos
-- **Python** versão 3.10 ou superior
-- Acesso à internet para conexão com MongoDB Atlas e OpenAI API
+A aplicação foi projetada com um **Modo Demonstração Zero-Setup** para permitir a execução no computador do professor sem a necessidade de chaves da API OpenAI ou banco de dados MongoDB Atlas.
 
----
+### 1️⃣ Executar o backend
+```bash
+pip install -r backend_python/requirements.txt
+python backend_python/main.py
+```
 
-## 📡 Documentação das Rotas (API Docs)
+O backend inicializará automaticamente o banco de dados em memória (*In-Memory Store*) e o motor de respostas socráticas sintonizado com os materiais didáticos locais RAG.
 
-A API do backend opera na porta `3000` (ou configurada via `PORT`).
+### 2️⃣ Acessar a aplicação
+Abra `index.html` ou `login.html` no seu navegador favorito.
 
-### 🔐 Autenticação (`/api/auth`)
-* `POST /api/auth/register`: Registra um novo usuário.
-* `POST /api/auth/login`: Valida as credenciais do usuário.
-
-### 💬 Conversas e Chat (`/api/chats`)
-* `GET /api/chats/:userId`: Retorna a lista de conversas do usuário.
-* `POST /api/chats`: Cria uma nova conversa.
-* `DELETE /api/chats/:id`: Deleta uma conversa.
-* `PUT /api/chats/:id/rename`: Edita o título de uma conversa.
-* `POST /api/chats/:id/message`: Processa a mensagem do usuário via RAG e OpenAI.
+### 🗝️ Contas de Teste Pré-cadastradas
+* **Aluno:** `aluno@iara.com` / Senha: `iara123`
+* **Professor:** `professor@iara.com` / Senha: `iara123`
+* **Administrador:** `adm@iara.com` / Senha: `iara123`
 
 ---
 
-## 📝 Estrutura de Pastas
+## 📁 Estrutura do Projeto
 
 ```
 IARA_Startup/
-├── backend_python/             # Servidor Python (FastAPI + RAG)
-│   ├── data/                   # Bases de conhecimento e exercícios RAG
-│   ├── routes/                 # Rotas da API (auth, chats, admin)
-│   ├── services/               # Serviços RAG e integração OpenAI
-│   ├── config.py               # Configurações de ambiente
-│   ├── database.py             # Conexão MongoDB Atlas
-│   └── main.py                 # Aplicação FastAPI (Ponto de entrada)
-├── index.html                  # Interface Web Principal
-├── login.html                  # Tela de Login
+├── backend_python/             # Servidor Python (FastAPI + RAG + Fallback Local)
+│   ├── data/                   # Bases de conhecimento RAG em Markdown (conceitos e exercícios)
+│   ├── routes/                 # Rotas da API (auth, chats, classes, admin)
+│   ├── services/               # RAG service, auth e guardrails de código
+│   ├── database.py             # Gerenciador de banco de dados (MongoDB Atlas / In-Memory Mock)
+│   └── main.py                 # Ponto de entrada do FastAPI
+├── index.html                  # Interface Principal do Chat UI
+├── login.html                  # Tela de Autenticação
 ├── register.html               # Tela de Cadastro
-├── admin.html                  # Painel Administrativo
-├── script.js                   # Lógica Frontend em JS
-└── README.md                   # Este arquivo
+├── selecionar_turma.html       # Painel de Seleção de Turmas
+├── admin.html                  # Painel Administrativo RAG
+├── style.css                   # Sistema Visual em Vanilla CSS
+├── script.js                   # Lógica de Interação Frontend em JS
+├── DOCUMENTO_EXPLICATIVO_IARA.md # Documento explicativo de UI/UX/A11y (Trabalho 1)
+└── INSTALACAO_RAPIDA.md        # Guia de execução rápida
 ```

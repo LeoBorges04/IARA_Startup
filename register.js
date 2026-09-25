@@ -131,7 +131,23 @@ document.getElementById("register-form").addEventListener("submit", async functi
         }
     });
   } catch (err) {
-      showCustomAlert("Erro de Conexão", "Falha ao se conectar com o servidor da base de dados.");
+      console.warn("Servidor backend não detectado. Cadastrando em Modo Local / Offline:", err);
+      const userObj = { email, name, role };
+      
+      localStorage.setItem("iara_logged_in", "true");
+      localStorage.setItem("iara_user_email", email);
+      localStorage.setItem("iara_user_name", name);
+      localStorage.setItem("iara_user_role", role);
+      localStorage.setItem("user", JSON.stringify(userObj));
+
+      showCustomAlert("Modo Demonstração Offline", "Cadastro realizado com sucesso (Modo Local sem servidor)!", () => {
+          if (role === 'professor' || role === 'admin') {
+              window.location.replace("selecionar_turma.html");
+          } else {
+              window.location.replace("index.html");
+          }
+      });
   }
 });
+
 

@@ -18,19 +18,27 @@ def get_embedding_model() -> SentenceTransformer:
 
 def generate_embedding(text: str) -> List[float]:
     """
-    Gera um vetor embedding (lista de floats) para o texto fornecido.
+    Gera um vetor embedding (lista de floats) para o texto fornecido com fallback seguro.
     """
-    model = get_embedding_model()
-    # Converte retorno do numpy para lista de floats nativa do python
-    embedding = model.encode(text, convert_to_numpy=True).tolist()
-    return embedding
+    try:
+        model = get_embedding_model()
+        embedding = model.encode(text, convert_to_numpy=True).tolist()
+        return embedding
+    except Exception as e:
+        logger.warning(f"Erro ao gerar embedding ({e}). Retornando vetor zerado de fallback.")
+        return [0.0] * 384
 
 def generate_embeddings_batch(texts: List[str]) -> List[List[float]]:
     """
-    Gera vetores embeddings em lote para otimizar velocidade.
+    Gera vetores embeddings em lote para otimizar velocidade com fallback seguro.
     """
     if not texts:
         return []
-    model = get_embedding_model()
-    embeddings = model.encode(texts, convert_to_numpy=True).tolist()
-    return embeddings
+    try:
+        model = get_embedding_model()
+        embeddings = model.encode(texts, convert_to_numpy=True).tolist()
+        return embeddings
+    except Exception as e:
+        logger.warning(f"Erro ao gerar embeddings em lote ({e}). Retornando vetores zerados.")
+        return [[0.0] * 384 for _ in texts]
+
