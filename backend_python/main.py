@@ -59,4 +59,9 @@ if os.path.exists(frontend_dir):
     app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="static")
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=config.PORT, reload=True)
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=config.PORT,
+        reload=not config.IS_PRODUCTION,  # reload=False em produção
+    )

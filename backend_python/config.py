@@ -15,5 +15,11 @@ else:
 MONGODB_URI = os.getenv("MONGODB_URI", "")
 PORT = int(os.getenv("PORT", 3000))
 API_KEY = os.getenv("API_KEY", "")
+OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "")
 EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL_NAME", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+
+# "development" (padrão local) ou "production" (Render / hospedagem remota)
+APP_ENV = os.getenv("APP_ENV", "development")
+IS_PRODUCTION = APP_ENV == "production"
+

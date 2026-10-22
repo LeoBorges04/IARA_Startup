@@ -17,13 +17,21 @@ _openai_client: Optional[OpenAI] = None
 
 def get_openai_client() -> Optional[OpenAI]:
     global _openai_client
-    if _openai_client is None and config.API_KEY:
-        try:
-            _openai_client = OpenAI(api_key=config.API_KEY)
-        except Exception as e:
-            logger.error(f"Erro ao inicializar cliente OpenAI: {e}")
-            return None
+    if _openai_client is None:
+        api_key = config.API_KEY or "local"
+        base_url = config.OPENAI_BASE_URL.strip() if config.OPENAI_BASE_URL else None
+
+        if config.API_KEY or base_url:
+            try:
+                kwargs = {"api_key": api_key}
+                if base_url:
+                    kwargs["base_url"] = base_url
+                _openai_client = OpenAI(**kwargs)
+            except Exception as e:
+                logger.error(f"Erro ao inicializar cliente OpenAI/Local LLM: {e}")
+                return None
     return _openai_client
+
 
 def chunk_text(text: str, chunk_size: int = 600, chunk_overlap: int = 100) -> List[str]:
     """
